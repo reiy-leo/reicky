@@ -54,4 +54,5 @@ cd src-tauri && cargo test     # 存储层单测
 
 ## 工作约定
 - 每轮对话完成后 commit 一次并 push 到 main
+- 不要自己打 `v*` tag 发版本（会触发三平台打包）；等 Rei 明确说「推版本」再打
 - 产品决策变化同步更新 docs/PRODUCT.md；经验与坑写进 `.agents/memory/MEMORY.md`
