@@ -36,6 +36,7 @@ export interface Page {
 }
 
 export const api = {
+  quit: () => invoke<void>("quit_app"),
   current: () => invoke<Note>("get_current_note"),
   get: (id: string) => invoke<Note>("get_note", { id }),
   saveText: (id: string, text: string) => invoke<Note>("save_text", { id, text }),

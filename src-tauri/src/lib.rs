@@ -2,7 +2,8 @@ mod store;
 
 use std::sync::Mutex;
 use store::{Note, Page, Store, COLORS};
-use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 struct AppState {
     store: Mutex<Store>,
@@ -106,6 +107,67 @@ fn open_note_window(app: AppHandle, id: String) -> Res<()> {
     Ok(())
 }
 
+#[tauri::command]
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
+/// 菜单栏图标左键：主窗口没在前台就显示并打开笔记列表；已在前台就收起
+fn toggle_list(app: &AppHandle) {
+    let Some(w) = app.get_webview_window("main") else { return };
+    let front = w.is_visible().unwrap_or(false) && w.is_focused().unwrap_or(false);
+    if front {
+        let _ = w.hide();
+    } else {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        let _ = w.emit("open-list", ());
+    }
+}
+
+fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
+    // macOS 用黑白模板图标，跟随菜单栏明暗；其他平台用应用图标
+    #[cfg(target_os = "macos")]
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
+    #[cfg(not(target_os = "macos"))]
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/32x32.png"))?;
+
+    let builder = TrayIconBuilder::with_id("main")
+        .icon(icon)
+        .icon_as_template(true)
+        .tooltip("reicky")
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_list(tray.app_handle());
+            }
+        });
+
+    // Linux 的托盘（AppIndicator）收不到点击事件，只能挂菜单兜底
+    #[cfg(target_os = "linux")]
+    let builder = {
+        use tauri::menu::{Menu, MenuItem};
+        let show = MenuItem::with_id(app, "list", "笔记列表 / Notes", true, None::<&str>)?;
+        let quit = MenuItem::with_id(app, "quit", "退出 / Quit", true, None::<&str>)?;
+        builder
+            .menu(&Menu::with_items(app, &[&show, &quit])?)
+            .on_menu_event(|app, e| match e.id().as_ref() {
+                "list" => toggle_list(app),
+                "quit" => app.exit(0),
+                _ => {}
+            })
+    };
+
+    builder.build(app)?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -115,7 +177,20 @@ pub fn run() {
             let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
             let store = Store::open(dir)?;
             app.manage(AppState { store: Mutex::new(store) });
+            // 不在 Dock 显示（打包后 Info.plist 的 LSUIElement 也会生效，这里保证 dev 模式一致）
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            setup_tray(app)?;
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // 没有 Dock 图标，关主窗口只是收起，从菜单栏图标再唤出
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main" {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             get_current_note,
@@ -127,7 +202,8 @@ pub fn run() {
             archive_note,
             unarchive_note,
             list_notes,
-            open_note_window
+            open_note_window,
+            quit_app
         ])
         .run(tauri::generate_context!())
         .expect("启动 reicky 失败");

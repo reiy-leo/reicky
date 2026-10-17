@@ -166,6 +166,7 @@ body.is-note-window #btn-list { display: none; }
 .sheet[hidden] { display: none; }
 [data-platform="windows"] .sheet { border-top-left-radius: 8px; border-top-right-radius: 8px; }
 
+.quit-btn { margin-left: auto; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid #e6e6e3; }
 .tabs { display: flex; gap: 2px; background: #ececea; padding: 2px; border-radius: calc(var(--radius) + 1px); }
 .tab { border: 0; background: transparent; padding: 2px 10px; border-radius: var(--radius); font-size: 12px; cursor: default; }

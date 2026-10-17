@@ -290,6 +290,12 @@ function closeSheet() {
 }
 $("btn-list").addEventListener("click", () => (sheet.hidden ? openSheet() : closeSheet()));
 $("btn-close-sheet").addEventListener("click", closeSheet);
+$("btn-quit").addEventListener("click", () => {
+  flushSave();
+  api.quit();
+});
+// 菜单栏图标左键 → 打开列表
+if (isMain) listen("open-list", () => openSheet());
 document.querySelectorAll<HTMLElement>(".tab").forEach((b) =>
   b.addEventListener("click", () => {
     showArchived = b.dataset.archived === "true";
