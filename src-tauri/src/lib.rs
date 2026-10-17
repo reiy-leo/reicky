@@ -89,6 +89,35 @@ fn list_notes(state: State<AppState>, offset: usize, limit: usize, archived: boo
     Ok(state.store.lock().unwrap().list(offset, limit.min(100), archived))
 }
 
+/// 便签窗口：始终置顶；macOS 上不进台前调度、跟随所有桌面空间、全屏应用上方也能看到
+fn pin_window(w: &tauri::WebviewWindow) {
+    let _ = w.set_always_on_top(true);
+    #[cfg(target_os = "macos")]
+    {
+        let w2 = w.clone();
+        let _ = w.run_on_main_thread(move || {
+            use objc2::msg_send;
+            use objc2::runtime::AnyObject;
+            // NSWindowCollectionBehavior
+            const CAN_JOIN_ALL_SPACES: usize = 1 << 0;
+            const STATIONARY: usize = 1 << 4;
+            const FULL_SCREEN_AUXILIARY: usize = 1 << 8;
+            const AUXILIARY: usize = 1 << 17; // 不单独成为台前调度的一组
+            const CLEAR: usize = (1 << 1) | (1 << 2) | (1 << 3) | (1 << 7) | (1 << 16);
+            let Ok(ptr) = w2.ns_window() else { return };
+            let ns = ptr as *mut AnyObject;
+            if ns.is_null() {
+                return;
+            }
+            unsafe {
+                let cur: usize = msg_send![ns, collectionBehavior];
+                let bits = (cur & !CLEAR) | CAN_JOIN_ALL_SPACES | STATIONARY | FULL_SCREEN_AUXILIARY | AUXILIARY;
+                let _: () = msg_send![ns, setCollectionBehavior: bits];
+            }
+        });
+    }
+}
+
 fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<()> {
     let label = format!("note-{id}");
     if let Some(w) = app.get_webview_window(&label) {
@@ -101,11 +130,13 @@ fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<
         .title("reicky")
         .inner_size(300.0, 300.0)
         .min_inner_size(220.0, 180.0)
-        .decorations(false);
+        .decorations(false)
+        .always_on_top(true);
     if let Some((x, y)) = pos {
         b = b.position(x, y);
     }
     let w = b.build().map_err(|e| e.to_string())?;
+    pin_window(&w);
     let _ = w.set_focus();
     Ok(())
 }
@@ -212,6 +243,9 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             setup_tray(app)?;
+            if let Some(w) = app.get_webview_window("main") {
+                pin_window(&w);
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
