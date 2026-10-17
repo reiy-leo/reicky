@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>reicky</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main id="note" class="note">
+      <textarea id="editor" class="editor" spellcheck="false" ></textarea>
+      <ul id="paths" class="paths" aria-label="拖入的文件"></ul>
+      <footer class="bar">
+        <div class="bar-left">
+          <button id="btn-color" class="icon-btn" data-i18n-title="color">
+            <span class="dot"></span>
+          </button>
+          <div id="palette" class="palette" hidden>
+            <div id="swatches" class="swatches"></div>
+            <div class="langs">
+              <button class="lang" data-lang="zh">中文</button>
+              <button class="lang" data-lang="en">EN</button>
+            </div>
+          </div>
+          <button id="btn-shape" class="icon-btn" data-i18n-title="shape">
+            <svg viewBox="0 0 24 24"><rect id="shape-icon" x="8" y="4" width="8" height="16" rx="1.5" /></svg>
+          </button>
+        </div>
+        <span id="status" class="status"></span>
+        <div class="bar-right">
+          <button id="btn-archive" class="icon-btn" data-i18n-title="archive">
+            <svg viewBox="0 0 24 24"><path d="M3 4h18v4H3zM5 8v12h14V8M10 12h4" /></svg>
+          </button>
+          <button id="btn-list" class="icon-btn" data-i18n-title="list">
+            <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+          </button>
+        </div>
+      </footer>
+    </main>
+
+    <section id="sheet" class="sheet" hidden>
+      <header class="sheet-head">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-archived="false" role="tab" data-i18n="tabNotes"></button>
+          <button class="tab" data-archived="true" role="tab" data-i18n="tabArchived"></button>
+        </div>
+        <button id="btn-close-sheet" class="icon-btn" data-i18n-title="close">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </header>
+      <div class="list-scroll">
+        <ul id="list" class="list"></ul>
+        <div id="list-sentinel" class="sentinel"></div>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

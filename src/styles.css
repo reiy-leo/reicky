@@ -1,0 +1,195 @@
+/* reicky：便签颜色 × 平台观感。平台由 main.ts 写在 html[data-platform]，颜色写在 html[data-color]。 */
+
+:root {
+  --paper: #fff7b1;
+  --paper-edge: #f0e48a;
+  --ink: #2b2a25;
+  --ink-soft: rgba(43, 42, 37, 0.55);
+  --hover: rgba(0, 0, 0, 0.07);
+  --radius: 6px;
+  --font: system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --bar-h: 30px;
+  color-scheme: light;
+}
+
+/* 颜色预设（参考 macOS Stickies） */
+[data-color="yellow"] { --paper: #fff7b1; --paper-edge: #efe08a; }
+[data-color="blue"]   { --paper: #d6ecff; --paper-edge: #b3d6f5; }
+[data-color="green"]  { --paper: #d8f5c9; --paper-edge: #b7e3a2; }
+[data-color="pink"]   { --paper: #ffd9e8; --paper-edge: #f5b6cf; }
+[data-color="purple"] { --paper: #e6dcff; --paper-edge: #cbbaf5; }
+[data-color="gray"]   { --paper: #ececec; --paper-edge: #d2d2d2; }
+
+/* 平台观感 */
+[data-platform="mac"] {
+  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  --radius: 6px;
+}
+[data-platform="windows"] {
+  --font: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  --radius: 4px;
+}
+[data-platform="linux"] {
+  --font: Cantarell, "Noto Sans CJK SC", "Noto Sans", Ubuntu, sans-serif;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--paper);
+  transition: background 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+button { font: inherit; color: inherit; }
+
+.note { display: flex; flex-direction: column; height: 100%; }
+
+.editor {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  resize: none;
+  padding: 10px 12px 6px;
+  background: transparent;
+  color: var(--ink);
+  font: 14px/1.5 var(--font);
+  -webkit-user-select: text;
+  user-select: text;
+}
+.editor::placeholder { color: var(--ink-soft); }
+
+body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px; }
+
+/* 拖入的路径 */
+.paths {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 30%;
+  overflow: auto;
+}
+.path {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.45);
+  font: 12px var(--mono);
+}
+.path span { padding: 2px 6px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.path-rm { border: 0; background: none; padding: 0 6px; cursor: pointer; color: var(--ink-soft); }
+.path-rm:hover { color: var(--ink); }
+
+/* 底部按钮条 */
+.bar {
+  height: var(--bar-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-top: 1px solid var(--paper-edge);
+}
+.bar-left, .bar-right { display: flex; gap: 2px; position: relative; }
+.status { flex: 1; text-align: center; color: var(--ink-soft); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.icon-btn {
+  width: 24px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: default;
+  color: var(--ink-soft);
+}
+.icon-btn:hover { background: var(--hover); color: var(--ink); }
+.icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--ink-soft); }
+
+[data-platform="windows"] .icon-btn { border-radius: 4px; }
+[data-platform="windows"] .icon-btn:hover { background: rgba(0, 0, 0, 0.06); }
+[data-platform="linux"] .icon-btn:hover { background: rgba(0, 0, 0, 0.09); }
+
+.palette {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #fff;
+  border-radius: calc(var(--radius) + 2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 5;
+}
+.palette[hidden] { display: none; }
+.swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.15); cursor: pointer; padding: 0; }
+.swatch[data-swatch="yellow"] { background: #fff7b1; }
+.swatch[data-swatch="blue"]   { background: #d6ecff; }
+.swatch[data-swatch="green"]  { background: #d8f5c9; }
+.swatch[data-swatch="pink"]   { background: #ffd9e8; }
+.swatch[data-swatch="purple"] { background: #e6dcff; }
+.swatch[data-swatch="gray"]   { background: #ececec; }
+
+/* 独立小窗口不需要列表按钮 */
+body.is-note-window #btn-list { display: none; }
+
+/* 底部弹出的笔记列表 */
+.sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 78%;
+  display: flex;
+  flex-direction: column;
+  background: #fbfbfa;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.2);
+  transform: translateY(100%);
+  transition: transform 0.18s ease-out;
+  z-index: 10;
+}
+.sheet.open { transform: translateY(0); }
+.sheet[hidden] { display: none; }
+[data-platform="windows"] .sheet { border-top-left-radius: 8px; border-top-right-radius: 8px; }
+
+.sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid #e6e6e3; }
+.tabs { display: flex; gap: 2px; background: #ececea; padding: 2px; border-radius: calc(var(--radius) + 1px); }
+.tab { border: 0; background: transparent; padding: 2px 10px; border-radius: var(--radius); font-size: 12px; cursor: default; }
+.tab.active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+
+.list-scroll { flex: 1; overflow: auto; }
+.list { list-style: none; margin: 0; padding: 4px; }
+.item { padding: 6px 8px 6px 12px; border-radius: var(--radius); cursor: default; position: relative; }
+.item::before { content: ""; position: absolute; left: 3px; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--c); }
+.item:hover { background: rgba(0, 0, 0, 0.05); }
+.item[data-color="yellow"] { --c: #f2d64b; }
+.item[data-color="blue"]   { --c: #72b3ee; }
+.item[data-color="green"]  { --c: #7fcf5c; }
+.item[data-color="pink"]   { --c: #ef86b0; }
+.item[data-color="purple"] { --c: #a48ae8; }
+.item[data-color="gray"]   { --c: #b3b3b3; }
+.item-text { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: pre-wrap; word-break: break-word; }
+.item-meta { margin-top: 2px; font-size: 11px; color: rgba(0, 0, 0, 0.45); }
+.empty { padding: 24px; text-align: center; color: rgba(0, 0, 0, 0.4); }
+.sentinel { height: 1px; }
+
+/* 颜色/语言弹层 */
+.palette { flex-direction: column; align-items: stretch; }
+.swatches { display: flex; gap: 6px; }
+.langs { display: flex; gap: 2px; background: #ececea; padding: 2px; border-radius: calc(var(--radius) + 1px); }
+.lang { flex: 1; border: 0; background: transparent; padding: 1px 6px; border-radius: var(--radius); font-size: 11px; cursor: default; }
+.lang.active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
