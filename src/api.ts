@@ -36,6 +36,7 @@ export interface Page {
 }
 
 export const api = {
+  newNote: (color: Color) => invoke<Note>("new_note_window", { color }),
   quit: () => invoke<void>("quit_app"),
   current: () => invoke<Note>("get_current_note"),
   get: (id: string) => invoke<Note>("get_note", { id }),

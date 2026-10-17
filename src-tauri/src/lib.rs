@@ -89,23 +89,53 @@ fn list_notes(state: State<AppState>, offset: usize, limit: usize, archived: boo
     Ok(state.store.lock().unwrap().list(offset, limit.min(100), archived))
 }
 
-/// 在独立小窗口打开某条笔记；已开着就聚焦
-#[tauri::command]
-fn open_note_window(app: AppHandle, id: String) -> Res<()> {
+fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<()> {
     let label = format!("note-{id}");
     if let Some(w) = app.get_webview_window(&label) {
         let _ = w.unminimize();
+        let _ = w.show();
         let _ = w.set_focus();
         return Ok(());
     }
-    WebviewWindowBuilder::new(&app, label, WebviewUrl::App(format!("index.html?note={id}").into()))
+    let mut b = WebviewWindowBuilder::new(app, label, WebviewUrl::App(format!("index.html?note={id}").into()))
         .title("reicky")
         .inner_size(300.0, 300.0)
         .min_inner_size(220.0, 180.0)
-        .decorations(false)
-        .build()
-        .map_err(|e| e.to_string())?;
+        .decorations(false);
+    if let Some((x, y)) = pos {
+        b = b.position(x, y);
+    }
+    let w = b.build().map_err(|e| e.to_string())?;
+    let _ = w.set_focus();
     Ok(())
+}
+
+/// 在独立小窗口打开某条笔记；已开着就聚焦
+#[tauri::command]
+// 建窗口必须用 async 命令，Windows 上同步命令里建窗口会死锁
+async fn open_note_window(app: AppHandle, id: String) -> Res<()> {
+    build_note_window(&app, &id, None)
+}
+
+/// 新建一张便签并在独立小窗口打开，位置相对调用它的窗口错开一点，可连续开多个
+#[tauri::command]
+async fn new_note_window(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+    state: State<'_, AppState>,
+    color: Option<String>,
+) -> Res<Note> {
+    let color = color.filter(|c| COLORS.contains(&c.as_str()));
+    let n = state.store.lock().unwrap().create(color.as_deref())?;
+    let pos = match (window.outer_position(), window.scale_factor()) {
+        (Ok(p), Ok(sf)) => {
+            let p = p.to_logical::<f64>(sf);
+            Some((p.x + 28.0, p.y + 28.0))
+        }
+        _ => None,
+    };
+    build_note_window(&app, &n.id, pos)?;
+    Ok(n)
 }
 
 #[tauri::command]
@@ -204,6 +234,7 @@ pub fn run() {
             unarchive_note,
             list_notes,
             open_note_window,
+            new_note_window,
             quit_app
         ])
         .run(tauri::generate_context!())

@@ -306,7 +306,17 @@ document.querySelectorAll<HTMLElement>(".tab").forEach((b) =>
     resetList();
   }),
 );
+function newNote() {
+  flushSave();
+  api.newNote(note?.color ?? "yellow").catch((err) => flash(t.saveFailed(err)));
+}
+$("btn-new").addEventListener("click", newNote);
 document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "n") {
+    e.preventDefault();
+    newNote();
+    return;
+  }
   if (e.key === "Escape") {
     palette.hidden = true;
     closeSheet();
