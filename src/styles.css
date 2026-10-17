@@ -146,6 +146,10 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 
 /* 独立小窗口不需要列表按钮 */
 body.is-note-window #btn-list { display: none; }
+#btn-close-note { display: none; }
+body.is-note-window #btn-close-note { display: grid; }
+/* 无标题栏：顶部窄条和底栏空白处可拖动窗口 */
+.grip { height: 12px; flex: none; }
 
 /* 底部弹出的笔记列表 */
 .sheet {

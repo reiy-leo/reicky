@@ -102,6 +102,7 @@ fn open_note_window(app: AppHandle, id: String) -> Res<()> {
         .title("reicky")
         .inner_size(300.0, 300.0)
         .min_inner_size(220.0, 180.0)
+        .decorations(false)
         .build()
         .map_err(|e| e.to_string())?;
     Ok(())

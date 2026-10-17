@@ -8,9 +8,10 @@
   </head>
   <body>
     <main id="note" class="note">
+      <div class="grip" data-tauri-drag-region></div>
       <textarea id="editor" class="editor" spellcheck="false" ></textarea>
       <ul id="paths" class="paths" aria-label="拖入的文件"></ul>
-      <footer class="bar">
+      <footer class="bar" data-tauri-drag-region>
         <div class="bar-left">
           <button id="btn-color" class="icon-btn" data-i18n-title="color">
             <span class="dot"></span>
@@ -26,10 +27,13 @@
             <svg viewBox="0 0 24 24"><rect id="shape-icon" x="8" y="4" width="8" height="16" rx="1.5" /></svg>
           </button>
         </div>
-        <span id="status" class="status"></span>
+        <span id="status" class="status" data-tauri-drag-region></span>
         <div class="bar-right">
           <button id="btn-archive" class="icon-btn" data-i18n-title="archive">
             <svg viewBox="0 0 24 24"><path d="M3 4h18v4H3zM5 8v12h14V8M10 12h4" /></svg>
+          </button>
+          <button id="btn-close-note" class="icon-btn" data-i18n-title="close">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
           <button id="btn-list" class="icon-btn" data-i18n-title="list">
             <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>

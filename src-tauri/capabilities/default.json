@@ -2,17 +2,25 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "主窗口与笔记小窗口的权限",
-  "windows": ["main", "note-*"],
+  "windows": [
+    "main",
+    "note-*"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-set-title",
     "core:window:allow-set-size",
+    "core:window:allow-start-dragging",
     "core:window:allow-close",
     "window-state:default",
     "opener:allow-reveal-item-in-dir",
     {
       "identifier": "opener:allow-open-path",
-      "allow": [{ "path": "**" }]
+      "allow": [
+        {
+          "path": "**"
+        }
+      ]
     }
   ]
 }

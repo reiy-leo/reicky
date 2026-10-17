@@ -290,6 +290,10 @@ function closeSheet() {
 }
 $("btn-list").addEventListener("click", () => (sheet.hidden ? openSheet() : closeSheet()));
 $("btn-close-sheet").addEventListener("click", closeSheet);
+$("btn-close-note").addEventListener("click", () => {
+  flushSave();
+  win.close();
+});
 $("btn-quit").addEventListener("click", () => {
   flushSave();
   api.quit();
