@@ -255,6 +255,8 @@ body.archived #btn-paste, body.archived #btn-archive, body.archived .path-rm { d
 .lw-foot { height: 30px; gap: 10px; padding: 0 4px 0 10px; border-top: 1px solid var(--line); }
 .lw-foot .status { text-align: right; }
 .lw-foot .status { flex: 1; }
+.lw-foot .tabs[hidden] { display: none; }
+.lw-foot .tabs { flex-shrink: 0; }
 #btn-settings.active { color: var(--ink); background: var(--line); }
 
 /* 列表面板：两个页面（列表 / 设置）轮换 */

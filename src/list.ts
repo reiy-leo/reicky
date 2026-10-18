@@ -177,6 +177,10 @@ q.addEventListener("input", () => {
 });
 
 $("btn-quit").addEventListener("click", () => api.quit());
+$("btn-new").addEventListener("click", () => {
+  hideTip();
+  api.newNote(color ?? "yellow").catch((err) => flash(t.saveFailed(err)));
+});
 
 // ---------- 设置页 ----------
 const paneList = $("pane-list");
@@ -186,6 +190,7 @@ function showSettings(on: boolean) {
   paneList.hidden = on;
   paneSettings.hidden = !on;
   btnSettings.classList.toggle("active", on);
+  $("tabs").hidden = on;
   hideTip();
   if (on) {
     syncAutostart();
