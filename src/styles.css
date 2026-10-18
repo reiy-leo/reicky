@@ -50,7 +50,7 @@ button { font: inherit; color: inherit; }
   border: 0;
   outline: 0;
   resize: none;
-  padding: 10px 12px 6px;
+  padding: 0 12px 6px;
   background: transparent;
   color: var(--ink);
   font: 14px/1.5 var(--font);
@@ -137,7 +137,13 @@ body.is-note-window #btn-list { display: none; }
 #btn-close-note { display: none; }
 body.is-note-window #btn-close-note { display: grid; }
 /* 无标题栏：顶部窄条和底栏空白处可拖动窗口 */
-.grip { height: 12px; flex: none; }
+.grip { height: 22px; flex: none; display: flex; justify-content: flex-end; align-items: center; padding: 2px 4px 0; }
+/* 置顶开关：置顶时实心，取消时空心淡出 */
+.pin-btn { width: 20px; height: 18px; opacity: 0.5; }
+.pin-btn svg { width: 13px; height: 13px; }
+.pin-btn[aria-pressed="true"] { opacity: 1; color: var(--ink); }
+.pin-btn[aria-pressed="true"] svg path { fill: currentColor; fill-opacity: 0.25; }
+.pin-btn:hover { opacity: 1; }
 
 /* 底部弹出的笔记列表 */
 .sheet {

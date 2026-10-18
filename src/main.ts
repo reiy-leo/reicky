@@ -83,6 +83,7 @@ function applyTexts() {
   document.querySelectorAll<HTMLElement>(".lang").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
   renderSwatches();
   updateShapeTitle();
+  renderPin();
   if (note) renderPaths();
 }
 
@@ -184,6 +185,32 @@ onLangChange(() => {
   applyTexts();
   if (!sheet.hidden) resetList();
 });
+
+// ---------- 置顶开关：默认置顶，按窗口 label 记住 ----------
+const pinKey = `reicky.pin.${win.label}`;
+let pinned = localStorage.getItem(pinKey) !== "false";
+function renderPin() {
+  const b = $("btn-pin");
+  b.setAttribute("aria-pressed", String(pinned));
+  b.dataset.tip = pinned ? t.pinOn : t.pinOff;
+  b.setAttribute("aria-label", b.dataset.tip);
+}
+async function applyPin(flashIt = false) {
+  renderPin();
+  try {
+    await win.setAlwaysOnTop(pinned);
+    if (flashIt) flash(pinned ? t.pinnedNow : t.unpinnedNow);
+  } catch (err) {
+    flash(t.saveFailed(err));
+  }
+}
+$("btn-pin").addEventListener("click", () => {
+  pinned = !pinned;
+  localStorage.setItem(pinKey, String(pinned));
+  hideTip();
+  applyPin(true);
+});
+applyPin();
 
 // ---------- 变换形状：瘦高 → 宽扁 → 正方形 循环 ----------
 type Shape = "tall" | "wide" | "square";

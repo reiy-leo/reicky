@@ -8,7 +8,11 @@
   </head>
   <body>
     <main id="note" class="note">
-      <div class="grip" data-tauri-drag-region></div>
+      <div class="grip" data-tauri-drag-region>
+        <button id="btn-pin" class="icon-btn pin-btn" aria-pressed="true">
+          <svg viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3zM12 14v6" /></svg>
+        </button>
+      </div>
       <textarea id="editor" class="editor" spellcheck="false" ></textarea>
       <ul id="paths" class="paths" aria-label="拖入的文件"></ul>
       <footer class="bar" data-tauri-drag-region>
