@@ -1,7 +1,7 @@
 // 笔记列表面板：独立窗口，从菜单栏图标下方或便签旁边弹出，失焦自动收起（Rust 端处理）
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { api, colorOf, COLORS, paperOf, type Color, type NoteSummary } from "./api";
+import { api, COLORS, paperOf, type Color, type NoteSummary } from "./api";
 import { isDark, onThemeChange } from "./theme";
 import { loadRender, onRenderChange, saveRender, type RenderOpts } from "./render";
 import { lang, onLangChange, t } from "./i18n";
@@ -77,7 +77,7 @@ function renderChips() {
 function item(it: NoteSummary) {
   const li = document.createElement("li");
   li.className = "item";
-  li.style.setProperty("--c", colorOf(it.color).dot);
+  li.style.setProperty("--c", paperOf(it.color, isDark).paper);
   const text = document.createElement("div");
   text.className = "item-text";
   text.textContent = it.preview || t.empty;
@@ -287,4 +287,7 @@ function applyTexts() {
 onLangChange(applyTexts);
 applyTexts();
 
-onThemeChange(renderChips);
+onThemeChange(() => {
+  renderChips();
+  resetList();
+});

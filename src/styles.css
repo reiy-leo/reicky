@@ -181,9 +181,9 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 
 .list-scroll { flex: 1; overflow: auto; }
 .list { list-style: none; margin: 0; padding: 4px; }
-.item { padding: 6px 8px 6px 12px; border-radius: var(--radius); cursor: default; position: relative; }
-.item::before { content: ""; position: absolute; left: 3px; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--c); }
-.item:hover { background: var(--item-hover); }
+.item { padding: 7px 10px; margin-bottom: 4px; border-radius: var(--radius); cursor: default; position: relative; background: var(--c); }
+.item:hover { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.05); }
+:root[data-theme="dark"] .item:hover { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.06); }
 .item-text { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: pre-wrap; word-break: break-word; }
 .item-meta { margin-top: 2px; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .meta-left { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
