@@ -29,7 +29,7 @@ let gen = 0; // 每次重置 +1，丢掉过期的请求结果
 let showArchived = false;
 let color: Color | undefined;
 
-// 今天：具体时间；更早：按日历算相差几年几月几天，如 3d ago / 1m 2d ago / 1y 3m 2d ago
+// 今天：具体时间；更早：按日历算相差几年几月几天，如 3d ago / 1m 2d ago（中文：3天前 / 1个月2天前）
 function fmtTime(ms: number) {
   const d = new Date(ms);
   const now = new Date();
@@ -49,8 +49,8 @@ function fmtTime(ms: number) {
     m += 12;
   }
   if (y < 0) return d.toLocaleDateString(); // 时间在未来（时钟被调过）
-  const parts = [y && `${y}y`, m && `${m}m`, day && `${day}d`].filter(Boolean);
-  return `${parts.join(" ") || "1d"} ago`;
+  if (!y && !m && !day) day = 1;
+  return t.ago(y, m, day);
 }
 
 function renderChips() {
