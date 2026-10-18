@@ -6,6 +6,29 @@ export const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.g
 const ua = navigator.userAgent;
 document.documentElement.dataset.platform = /Mac/i.test(ua) ? "mac" : /Win/i.test(ua) ? "windows" : "linux";
 
+// ---------- 禁用 WebView 默认行为：右键菜单、开发者工具 / 刷新 / 查找 / 打印等快捷键 ----------
+document.addEventListener("contextmenu", (e) => e.preventDefault(), { capture: true });
+const isMac = document.documentElement.dataset.platform === "mac";
+document.addEventListener(
+  "keydown",
+  (e) => {
+    // mac 只看 ⌘（Ctrl+F/P 等是文本框里的 emacs 光标移动，不能拦）；其他平台看 Ctrl
+    const mod = isMac ? e.metaKey : e.ctrlKey;
+    const c = e.code;
+    const blocked =
+      ["F3", "F5", "F7", "F11", "F12"].includes(e.key) ||
+      (mod && e.altKey && ["KeyI", "KeyJ", "KeyC", "KeyU"].includes(c)) || // 开发者工具 / 控制台 / 检查元素 / 源码
+      (mod && e.shiftKey && ["KeyI", "KeyJ", "KeyC", "KeyR", "Delete"].includes(c)) ||
+      (mod && !e.altKey && !e.shiftKey && ["KeyR", "KeyP", "KeyF", "KeyG", "KeyU", "KeyS", "KeyJ", "KeyH"].includes(c)) || // 刷新/打印/查找/源码/保存/下载/历史
+      (mod && ["Equal", "Minus", "Digit0", "NumpadAdd", "NumpadSubtract"].includes(c)); // 缩放
+    if (blocked) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  },
+  { capture: true },
+);
+
 // ---------- 悬停提示：自绘 tooltip（原生 title 在置顶/未激活窗口里常常不出），夹在窗口内 ----------
 const tip = document.createElement("div");
 tip.className = "tip";
