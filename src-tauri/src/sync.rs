@@ -1,5 +1,5 @@
 //! Google Drive 同步：笔记存到用户 Drive 的 appDataFolder（应用私有、用户网盘里看不见），
-//! 每条笔记一个 `<id>.json`，appProperties.modified 记修改时间。笔记不删除，所以合并就是
+//! 每条笔记一个 `reicky-<id>.json`，appProperties.app=reicky 标记归属（appDataFolder 按 GCP 项目共享，可能和 navill 同一个），appProperties.modified 记修改时间。笔记不删除，所以合并就是
 //! 按 modified 取新：本地新就上传，远端新就下载。
 //!
 //! 登录走桌面端 OAuth：本机回环端口 + PKCE。客户端 ID/密钥编译时从环境变量
@@ -309,6 +309,8 @@ fn list_remote(token: &str) -> Res<Vec<RemoteFile>> {
             .get(DRIVE)
             .set("Authorization", &format!("Bearer {token}"))
             .query("spaces", "appDataFolder")
+            // appDataFolder 按 GCP 项目共享（和 navill 同项目），只看 reicky 自己的文件
+            .query("q", "appProperties has { key='app' and value='reicky' } and trashed = false")
             .query("pageSize", "1000")
             .query("fields", "nextPageToken,files(id,name,appProperties)");
         if let Some(p) = &page {
@@ -325,9 +327,9 @@ fn list_remote(token: &str) -> Res<Vec<RemoteFile>> {
 
 fn upload(token: &str, note: &Note, existing: Option<&str>) -> Res<()> {
     let boundary = format!("reicky-{}", uuid::Uuid::new_v4().simple());
-    let mut meta = serde_json::json!({ "appProperties": { "modified": note.modified.to_string() } });
+    let mut meta = serde_json::json!({ "appProperties": { "app": "reicky", "modified": note.modified.to_string() } });
     if existing.is_none() {
-        meta["name"] = format!("{}.json", note.id).into();
+        meta["name"] = format!("reicky-{}.json", note.id).into();
         meta["parents"] = serde_json::json!(["appDataFolder"]);
     }
     let body = format!(
@@ -364,7 +366,7 @@ fn sync_once(app: &AppHandle) -> Res<()> {
     let local: HashMap<String, Note> = st.store.lock().unwrap().all().into_iter().map(|n| (n.id.clone(), n)).collect();
     let mut by_id: HashMap<String, &RemoteFile> = HashMap::new();
     for f in &remote {
-        if let Some(id) = f.name.strip_suffix(".json") {
+        if let Some(id) = f.name.strip_prefix("reicky-").and_then(|n| n.strip_suffix(".json")) {
             by_id.insert(id.to_string(), f);
         }
     }
