@@ -7,7 +7,9 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub const COLORS: &[&str] = &["yellow", "blue", "green", "pink", "purple", "gray"];
+pub const COLORS: &[&str] = &[
+    "yellow", "cream", "orange", "coral", "pink", "purple", "blue", "cyan", "mint", "green", "white", "gray",
+];
 pub const DEFAULT_COLOR: &str = "yellow";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

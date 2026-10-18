@@ -1,4 +1,4 @@
-/* reicky：便签颜色 × 平台观感。平台由 main.ts 写在 html[data-platform]，颜色写在 html[data-color]。 */
+/* reicky：便签颜色 × 平台观感。平台由 main.ts 写在 html[data-platform]，颜色由 main.ts 写进 --paper。 */
 
 :root {
   --paper: #fff7b1;
@@ -13,13 +13,7 @@
   color-scheme: light;
 }
 
-/* 颜色预设（参考 macOS Stickies） */
-[data-color="yellow"] { --paper: #fff7b1; --paper-edge: #efe08a; }
-[data-color="blue"]   { --paper: #d6ecff; --paper-edge: #b3d6f5; }
-[data-color="green"]  { --paper: #d8f5c9; --paper-edge: #b7e3a2; }
-[data-color="pink"]   { --paper: #ffd9e8; --paper-edge: #f5b6cf; }
-[data-color="purple"] { --paper: #e6dcff; --paper-edge: #cbbaf5; }
-[data-color="gray"]   { --paper: #ececec; --paper-edge: #d2d2d2; }
+/* 颜色预设在 api.ts COLORS，由 main.ts 写进 --paper / --paper-edge */
 
 /* 平台观感 */
 [data-platform="mac"] {
@@ -137,12 +131,6 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 }
 .palette[hidden] { display: none; }
 .swatch { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.15); cursor: pointer; padding: 0; }
-.swatch[data-swatch="yellow"] { background: #fff7b1; }
-.swatch[data-swatch="blue"]   { background: #d6ecff; }
-.swatch[data-swatch="green"]  { background: #d8f5c9; }
-.swatch[data-swatch="pink"]   { background: #ffd9e8; }
-.swatch[data-swatch="purple"] { background: #e6dcff; }
-.swatch[data-swatch="gray"]   { background: #ececec; }
 
 /* 独立小窗口不需要列表按钮 */
 body.is-note-window #btn-list { display: none; }
@@ -181,12 +169,6 @@ body.is-note-window #btn-close-note { display: grid; }
 .item { padding: 6px 8px 6px 12px; border-radius: var(--radius); cursor: default; position: relative; }
 .item::before { content: ""; position: absolute; left: 3px; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--c); }
 .item:hover { background: rgba(0, 0, 0, 0.05); }
-.item[data-color="yellow"] { --c: #f2d64b; }
-.item[data-color="blue"]   { --c: #72b3ee; }
-.item[data-color="green"]  { --c: #7fcf5c; }
-.item[data-color="pink"]   { --c: #ef86b0; }
-.item[data-color="purple"] { --c: #a48ae8; }
-.item[data-color="gray"]   { --c: #b3b3b3; }
 .item-text { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: pre-wrap; word-break: break-word; }
 .item-meta { margin-top: 2px; font-size: 11px; color: rgba(0, 0, 0, 0.45); }
 .empty { padding: 24px; text-align: center; color: rgba(0, 0, 0, 0.4); }
@@ -194,7 +176,8 @@ body.is-note-window #btn-close-note { display: grid; }
 
 /* 颜色/语言弹层 */
 .palette { flex-direction: column; align-items: stretch; }
-.swatches { display: flex; gap: 6px; }
+.swatches { display: grid; grid-template-columns: repeat(6, 18px); gap: 6px; }
+.swatch.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--ink-soft); }
 .langs { display: flex; gap: 2px; background: #ececea; padding: 2px; border-radius: calc(var(--radius) + 1px); }
 .lang { flex: 1; border: 0; background: transparent; padding: 1px 6px; border-radius: var(--radius); font-size: 11px; cursor: default; }
 .lang.active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }

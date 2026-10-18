@@ -2,7 +2,8 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
-import { api, COLORS, type Color, type Note } from "./api";
+import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { api, colorOf, COLORS, type Note } from "./api";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -80,7 +81,11 @@ function renderPaths() {
 
 function setNote(n: Note, force = false) {
   note = n;
-  document.documentElement.dataset.color = n.color;
+  const c = colorOf(n.color);
+  const root = document.documentElement.style;
+  root.setProperty("--paper", c.paper);
+  root.setProperty("--paper-edge", c.edge);
+  swatches.querySelectorAll<HTMLElement>(".swatch").forEach((b) => b.classList.toggle("active", b.dataset.swatch === c.id));
   if (force || document.activeElement !== editor) {
     if (editor.value !== n.text) editor.value = n.text;
   }
@@ -94,12 +99,14 @@ function renderSwatches() {
       const b = document.createElement("button");
       b.className = "swatch";
       b.dataset.swatch = id;
+      b.style.background = colorOf(id).paper;
+      if (note) b.classList.toggle("active", note.color === id);
       b.title = t.colors[id];
       b.setAttribute("aria-label", t.colors[id]);
       b.addEventListener("click", async () => {
         if (!note) return;
         palette.hidden = true;
-        setNote(await api.setColor(note.id, id as Color));
+        setNote(await api.setColor(note.id, id));
       });
       return b;
     }),
@@ -224,7 +231,7 @@ async function loadMore() {
       if (!showArchived && it.id === note?.id) continue; // 主窗口正在编辑的那条不重复列出
       const li = document.createElement("li");
       li.className = "item";
-      li.dataset.color = it.color;
+      li.style.setProperty("--c", colorOf(it.color).dot);
       const text = document.createElement("div");
       text.className = "item-text";
       text.textContent = it.preview || t.empty;
@@ -311,6 +318,33 @@ function newNote() {
   api.newNote(note?.color ?? "yellow").catch((err) => flash(t.saveFailed(err)));
 }
 $("btn-new").addEventListener("click", newNote);
+
+// ---------- 剪贴板：拷贝（有选区拷选区，否则整张）/ 粘贴到光标处 ----------
+$("btn-copy").addEventListener("click", async () => {
+  const { selectionStart: a, selectionEnd: b, value } = editor;
+  const text = a !== b ? value.slice(a, b) : value;
+  if (!text) return flash(t.nothingToCopy);
+  try {
+    await writeText(text);
+    flash(a !== b ? t.copiedSel : t.copiedAll);
+  } catch (err) {
+    flash(t.clipFailed(err));
+  }
+});
+// mousedown 不抢焦点，保住编辑器里的光标位置
+for (const id of ["btn-copy", "btn-paste"]) $(id).addEventListener("mousedown", (e) => e.preventDefault());
+$("btn-paste").addEventListener("click", async () => {
+  try {
+    const text = await readText();
+    if (!text) return flash(t.clipEmpty);
+    editor.focus();
+    editor.setRangeText(text, editor.selectionStart, editor.selectionEnd, "end");
+    editor.dispatchEvent(new Event("input"));
+    flash(t.pasted);
+  } catch (err) {
+    flash(t.clipFailed(err));
+  }
+});
 document.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "n") {
     e.preventDefault();

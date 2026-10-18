@@ -1,15 +1,23 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export type Color = "yellow" | "blue" | "green" | "pink" | "purple" | "gray";
+// 便签颜色：paper 纸面、edge 纸边、dot 列表色条 / 色块描边。Rust 端 store.rs COLORS 要同步。
+export const COLORS = [
+  { id: "yellow", paper: "#fff7b1", edge: "#efe08a", dot: "#f2d64b" },
+  { id: "cream", paper: "#fbf1dc", edge: "#ecdcb8", dot: "#dcc08a" },
+  { id: "orange", paper: "#ffe2bf", edge: "#f5c891", dot: "#f5a54a" },
+  { id: "coral", paper: "#ffd6cc", edge: "#f5b5a5", dot: "#ef7f66" },
+  { id: "pink", paper: "#ffd9e8", edge: "#f5b6cf", dot: "#ef86b0" },
+  { id: "purple", paper: "#e6dcff", edge: "#cbbaf5", dot: "#a48ae8" },
+  { id: "blue", paper: "#d6ecff", edge: "#b3d6f5", dot: "#72b3ee" },
+  { id: "cyan", paper: "#d2f4f7", edge: "#a9e0e6", dot: "#4fc3cf" },
+  { id: "mint", paper: "#d3f5e6", edge: "#ade3cb", dot: "#5cc79a" },
+  { id: "green", paper: "#d8f5c9", edge: "#b7e3a2", dot: "#7fcf5c" },
+  { id: "white", paper: "#fdfdfb", edge: "#e4e4df", dot: "#d0d0c8" },
+  { id: "gray", paper: "#ececec", edge: "#d2d2d2", dot: "#b3b3b3" },
+] as const;
 
-export const COLORS: { id: Color; name: string }[] = [
-  { id: "yellow", name: "黄" },
-  { id: "blue", name: "蓝" },
-  { id: "green", name: "绿" },
-  { id: "pink", name: "粉" },
-  { id: "purple", name: "紫" },
-  { id: "gray", name: "灰" },
-];
+export type Color = (typeof COLORS)[number]["id"];
+export const colorOf = (id: string) => COLORS.find((c) => c.id === id) ?? COLORS[0];
 
 export interface Note {
   id: string;

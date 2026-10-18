@@ -13,6 +13,8 @@
     "core:window:allow-start-dragging",
     "core:window:allow-close",
     "window-state:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
     "opener:allow-reveal-item-in-dir",
     {
       "identifier": "opener:allow-open-path",
