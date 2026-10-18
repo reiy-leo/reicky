@@ -5,27 +5,18 @@ import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { api, colorOf, COLORS, type Note } from "./api";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
-
-const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+import { $, applyI18n, hideTip } from "./common";
 const editor = $<HTMLTextAreaElement>("editor");
 const pathsEl = $<HTMLUListElement>("paths");
 const statusEl = $("status");
 const palette = $("palette");
 const swatches = $("swatches");
-const sheet = $("sheet");
-const listEl = $<HTMLUListElement>("list");
-const sentinel = $("list-sentinel");
 const shapeIcon = $("shape-icon");
 
 const win = getCurrentWindow();
 const isMain = win.label === "main";
 const noteParam = new URLSearchParams(location.search).get("note");
 let note: Note | undefined;
-
-// ---------- 平台观感 ----------
-const ua = navigator.userAgent;
-document.documentElement.dataset.platform = /Mac/i.test(ua) ? "mac" : /Win/i.test(ua) ? "windows" : "linux";
-if (!isMain) document.body.classList.add("is-note-window");
 
 // ---------- 状态提示 ----------
 let statusTimer: number | undefined;
@@ -35,51 +26,10 @@ function flash(msg: string) {
   statusTimer = window.setTimeout(() => (statusEl.textContent = ""), 2200);
 }
 
-// ---------- 悬停提示：自绘 tooltip（原生 title 在置顶/未激活窗口里常常不出），夹在窗口内 ----------
-const tip = document.createElement("div");
-tip.className = "tip";
-tip.hidden = true;
-document.body.append(tip);
-let tipTimer: number | undefined;
-let tipFor: HTMLElement | null = null;
-function hideTip() {
-  clearTimeout(tipTimer);
-  tipFor = null;
-  tip.hidden = true;
-}
-function showTip(el: HTMLElement) {
-  tip.textContent = el.dataset.tip ?? "";
-  tip.hidden = false;
-  const r = el.getBoundingClientRect();
-  const w = tip.offsetWidth, h = tip.offsetHeight, pad = 4;
-  const left = Math.min(Math.max(pad, r.left + r.width / 2 - w / 2), innerWidth - w - pad);
-  const above = r.top - h - 6;
-  tip.style.left = `${left}px`;
-  tip.style.top = `${above >= pad ? above : r.bottom + 6}px`;
-}
-document.addEventListener("mouseover", (e) => {
-  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-tip]");
-  if (el === tipFor) return;
-  hideTip();
-  if (!el || !el.dataset.tip) return;
-  tipFor = el;
-  tipTimer = window.setTimeout(() => showTip(el), 350);
-});
-document.addEventListener("mousedown", hideTip, true);
-document.addEventListener("mouseleave", hideTip);
-window.addEventListener("blur", hideTip);
-
 // ---------- 文案 ----------
 function applyTexts() {
   editor.placeholder = t.placeholder;
-  document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
-    el.textContent = String(t[el.dataset.i18n as keyof typeof t] ?? "");
-  });
-  document.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((el) => {
-    const v = String(t[el.dataset.i18nTitle as keyof typeof t] ?? "");
-    el.dataset.tip = v;
-    el.setAttribute("aria-label", v);
-  });
+  applyI18n();
   document.querySelectorAll<HTMLElement>(".lang").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
   renderSwatches();
   updateShapeTitle();
@@ -178,13 +128,9 @@ document.querySelectorAll<HTMLButtonElement>(".lang").forEach((b) =>
   b.addEventListener("click", () => {
     setLang(b.dataset.lang as Lang);
     applyTexts();
-    if (!sheet.hidden) resetList();
   }),
 );
-onLangChange(() => {
-  applyTexts();
-  if (!sheet.hidden) resetList();
-});
+onLangChange(applyTexts);
 
 // ---------- 置顶开关：默认置顶，按窗口 label 记住 ----------
 const pinKey = `reicky.pin.${win.label}`;
@@ -266,116 +212,18 @@ $("btn-archive").addEventListener("click", async () => {
   }
 });
 
-// ---------- 笔记列表：底部弹出，modified 倒序，滚动加载 ----------
-const PAGE = 30;
-let offset = 0;
-let hasMore = true;
-let loading = false;
-let showArchived = false;
-
-function fmtTime(ms: number) {
-  const d = new Date(ms);
-  const loc = lang === "zh" ? "zh-CN" : "en-US";
-  return d.toDateString() === new Date().toDateString()
-    ? d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString(loc, { year: "numeric", month: "short", day: "numeric" });
-}
-
-async function loadMore() {
-  if (loading || !hasMore) return;
-  loading = true;
-  try {
-    const page = await api.list(offset, PAGE, showArchived);
-    offset += page.items.length;
-    hasMore = page.hasMore;
-    for (const it of page.items) {
-      if (!showArchived && it.id === note?.id) continue; // 主窗口正在编辑的那条不重复列出
-      const li = document.createElement("li");
-      li.className = "item";
-      li.style.setProperty("--c", colorOf(it.color).dot);
-      const text = document.createElement("div");
-      text.className = "item-text";
-      text.textContent = it.preview || t.empty;
-      const meta = document.createElement("div");
-      meta.className = "item-meta";
-      meta.textContent = [fmtTime(it.modified), it.pathCount ? t.pathCount(it.pathCount) : ""].filter(Boolean).join(" · ");
-      li.append(text, meta);
-      if (it.archived) {
-        const r = document.createElement("button");
-        r.className = "lang";
-        r.style.marginTop = "4px";
-        r.textContent = t.unarchive;
-        r.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          await api.unarchive(it.id);
-          li.remove();
-          flash(t.restored);
-        });
-        li.append(r);
-      }
-      li.addEventListener("click", () => api.openWindow(it.id).catch((err) => flash(t.openFailed(err))));
-      listEl.append(li);
-    }
-    if (!hasMore && listEl.childElementCount === 0) {
-      const li = document.createElement("li");
-      li.className = "empty";
-      li.textContent = showArchived ? t.emptyArchived : t.emptyList;
-      listEl.append(li);
-    }
-  } catch (err) {
-    flash(t.loadFailed(err));
-  } finally {
-    loading = false;
-  }
-  // 一页没填满可视区时继续加载
-  if (hasMore && sentinel.getBoundingClientRect().top < window.innerHeight) loadMore();
-}
-
-function resetList() {
-  listEl.replaceChildren();
-  offset = 0;
-  hasMore = true;
-  document.querySelectorAll<HTMLElement>(".tab").forEach((b) =>
-    b.classList.toggle("active", (b.dataset.archived === "true") === showArchived),
-  );
-  loadMore();
-}
-
-new IntersectionObserver((es) => {
-  if (!sheet.hidden && es.some((e) => e.isIntersecting)) loadMore();
-}, { root: listEl.parentElement }).observe(sentinel);
-
-function openSheet() {
+// ---------- 笔记列表：独立面板窗口，贴着这个便签弹出 ----------
+$("btn-list").addEventListener("click", () => {
   flushSave();
   palette.hidden = true;
-  sheet.hidden = false;
-  requestAnimationFrame(() => sheet.classList.add("open"));
-  resetList();
-}
-function closeSheet() {
-  sheet.classList.remove("open");
-  sheet.hidden = true;
-}
-$("btn-list").addEventListener("click", () => (sheet.hidden ? openSheet() : closeSheet()));
-$("btn-close-sheet").addEventListener("click", closeSheet);
+  api.showList().catch((err) => flash(t.openFailed(err)));
+});
 // 收起来：便签窗口关掉、笔记留在列表里；主窗口收起（从菜单栏图标再唤出，Rust 端拦截了 close）
 $("btn-stow").addEventListener("click", () => {
   flushSave();
   hideTip();
   win.close();
 });
-$("btn-quit").addEventListener("click", () => {
-  flushSave();
-  api.quit();
-});
-// 菜单栏图标左键 → 打开列表
-if (isMain) listen("open-list", () => openSheet());
-document.querySelectorAll<HTMLElement>(".tab").forEach((b) =>
-  b.addEventListener("click", () => {
-    showArchived = b.dataset.archived === "true";
-    resetList();
-  }),
-);
 function newNote() {
   flushSave();
   api.newNote(note?.color ?? "yellow").catch((err) => flash(t.saveFailed(err)));
@@ -414,10 +262,7 @@ document.addEventListener("keydown", (e) => {
     newNote();
     return;
   }
-  if (e.key === "Escape") {
-    palette.hidden = true;
-    closeSheet();
-  }
+  if (e.key === "Escape") palette.hidden = true;
 });
 
 // ---------- 拖入文件 / 文件夹：只记路径 ----------

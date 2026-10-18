@@ -36,6 +36,10 @@ export interface NoteSummary {
   archived: boolean;
   pathCount: number;
   modified: number;
+  /** 已在某个窗口开着 */
+  open: boolean;
+  /** 主便签那条 */
+  main: boolean;
 }
 
 export interface Page {
@@ -54,7 +58,9 @@ export const api = {
   removePath: (id: string, path: string) => invoke<Note>("remove_path", { id, path }),
   archive: (id: string) => invoke<Note | null>("archive_note", { id }),
   unarchive: (id: string) => invoke<Note>("unarchive_note", { id }),
-  list: (offset: number, limit: number, archived: boolean) =>
-    invoke<Page>("list_notes", { offset, limit, archived }),
+  list: (offset: number, limit: number, archived: boolean, query?: string, color?: Color) =>
+    invoke<Page>("list_notes", { offset, limit, archived, query: query || null, color: color ?? null }),
+  showList: () => invoke<void>("show_list"),
+  showMain: () => invoke<void>("show_main_window"),
   openWindow: (id: string) => invoke<void>("open_note_window", { id }),
 };
