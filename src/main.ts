@@ -38,6 +38,9 @@ function applyTexts() {
 }
 
 // ---------- 渲染笔记 ----------
+const ICON_DIR = '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>';
+const ICON_FILE = '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5" /></svg>';
+
 function renderPaths() {
   if (!note) return;
   const n = note;
@@ -45,8 +48,13 @@ function renderPaths() {
     ...n.paths.map((p) => {
       const li = document.createElement("li");
       li.className = "path";
+      const base = p.split(/[\\/]/).filter(Boolean).pop() ?? p;
+      // 没有扩展名的当作文件夹（只是图标提示，不读磁盘）
+      const isDir = !/\.[^.]+$/.test(base) || p.endsWith("/") || p.endsWith("\\");
       const name = document.createElement("span");
-      name.textContent = p.split(/[\\/]/).filter(Boolean).pop() ?? p;
+      name.className = "path-name";
+      name.innerHTML = isDir ? ICON_DIR : ICON_FILE;
+      name.append(base);
       name.dataset.tip = `${p}\n${t.pathTip}`;
       name.addEventListener("click", (e) => {
         const run = e.altKey ? revealItemInDir(p) : openPath(p);

@@ -76,13 +76,17 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.45);
-  font: 12px var(--mono);
+  height: 22px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 12px;
 }
-.path span { padding: 2px 6px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.path-rm { border: 0; background: none; padding: 0 6px; cursor: pointer; color: var(--ink-soft); }
+.path:hover { background: rgba(0, 0, 0, 0.1); }
+.path-name { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px 0 8px; cursor: default; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.path-name svg { width: 13px; height: 13px; flex: none; fill: none; stroke: var(--ink-soft); stroke-width: 1.8; stroke-linejoin: round; }
+/* × 只在悬停时出现 */
+.path-rm { border: 0; background: none; width: 18px; padding: 0 6px 0 0; cursor: default; color: var(--ink-soft); visibility: hidden; }
+.path:hover .path-rm { visibility: visible; }
 .path-rm:hover { color: var(--ink); }
 
 /* 底部按钮条 */
