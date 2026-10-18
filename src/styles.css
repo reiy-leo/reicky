@@ -135,6 +135,8 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
   height: 22px;
   display: grid;
   place-items: center;
+  flex: none;
+  padding: 0; /* WebKit 给 button 默认左右 padding，会把图标挤偏 */
   border: 0;
   border-radius: var(--radius);
   background: transparent;
@@ -142,7 +144,7 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
   color: var(--ink-soft);
 }
 .icon-btn:hover { background: var(--hover); color: var(--ink); }
-.icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn svg { display: block; flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .icon-btn svg .dot { fill: var(--paper); }
 
 [data-platform="windows"] .icon-btn { border-radius: 4px; }
