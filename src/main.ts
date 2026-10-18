@@ -358,8 +358,10 @@ function closeSheet() {
 }
 $("btn-list").addEventListener("click", () => (sheet.hidden ? openSheet() : closeSheet()));
 $("btn-close-sheet").addEventListener("click", closeSheet);
-$("btn-close-note").addEventListener("click", () => {
+// 收起来：便签窗口关掉、笔记留在列表里；主窗口收起（从菜单栏图标再唤出，Rust 端拦截了 close）
+$("btn-stow").addEventListener("click", () => {
   flushSave();
+  hideTip();
   win.close();
 });
 $("btn-quit").addEventListener("click", () => {

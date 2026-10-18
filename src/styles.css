@@ -134,8 +134,6 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 
 /* 独立小窗口不需要列表按钮 */
 body.is-note-window #btn-list { display: none; }
-#btn-close-note { display: none; }
-body.is-note-window #btn-close-note { display: grid; }
 /* 无标题栏：顶部窄条和底栏空白处可拖动窗口 */
 .grip { height: 22px; flex: none; display: flex; justify-content: flex-end; align-items: center; padding: 2px 4px 0; }
 /* 置顶开关：置顶时实心，取消时空心淡出 */
