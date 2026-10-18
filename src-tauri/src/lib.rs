@@ -89,7 +89,8 @@ fn list_notes(state: State<AppState>, offset: usize, limit: usize, archived: boo
     Ok(state.store.lock().unwrap().list(offset, limit.min(100), archived))
 }
 
-/// 便签窗口：始终置顶；macOS 上不进台前调度、跟随所有桌面空间、全屏应用上方也能看到
+/// 便签窗口：始终置顶；macOS 上不进台前调度、跟随所有桌面空间、全屏应用上方也能看到，
+/// 并藏掉红绿灯（mac 用「透明标题栏 overlay」来保留原生圆角和阴影，所以要手动藏按钮）
 fn pin_window(w: &tauri::WebviewWindow) {
     let _ = w.set_always_on_top(true);
     #[cfg(target_os = "macos")]
@@ -113,6 +114,13 @@ fn pin_window(w: &tauri::WebviewWindow) {
                 let cur: usize = msg_send![ns, collectionBehavior];
                 let bits = (cur & !CLEAR) | CAN_JOIN_ALL_SPACES | STATIONARY | FULL_SCREEN_AUXILIARY | AUXILIARY;
                 let _: () = msg_send![ns, setCollectionBehavior: bits];
+                // NSWindowButton: close=0, miniaturize=1, zoom=2
+                for kind in 0usize..3 {
+                    let btn: *mut AnyObject = msg_send![ns, standardWindowButton: kind];
+                    if !btn.is_null() {
+                        let _: () = msg_send![btn, setHidden: true];
+                    }
+                }
             }
         });
     }
@@ -130,8 +138,19 @@ fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<
         .title("reicky")
         .inner_size(300.0, 300.0)
         .min_inner_size(220.0, 180.0)
-        .decorations(false)
         .always_on_top(true);
+    // macOS：保留系统窗框但标题栏透明叠在内容上 → 原生圆角 + 阴影；其他平台无边框
+    #[cfg(target_os = "macos")]
+    {
+        b = b
+            .decorations(true)
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true);
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        b = b.decorations(false);
+    }
     if let Some((x, y)) = pos {
         b = b.position(x, y);
     }
@@ -233,7 +252,16 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_window_state::Builder::new().build())
+        // 窗口状态只记位置/大小等，不恢复 decorations/可见性（旧版本存下的“有标题栏”会把新配置盖掉）
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::all()
+                        & !tauri_plugin_window_state::StateFlags::DECORATIONS
+                        & !tauri_plugin_window_state::StateFlags::VISIBLE,
+                )
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {

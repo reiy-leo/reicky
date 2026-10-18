@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "reicky",
+        "width": 320,
+        "height": 340,
+        "minWidth": 220,
+        "minHeight": 180,
+        "resizable": true,
+        "dragDropEnabled": true,
+        "decorations": true,
+        "alwaysOnTop": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
+      }
+    ]
+  }
+}
