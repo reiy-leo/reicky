@@ -24,6 +24,15 @@ export const paperOf = (id: string, dark: boolean) => {
   return dark ? { paper: c.paperDark, edge: c.edgeDark } : { paper: c.paper, edge: c.edge };
 };
 
+export interface SyncStatus {
+  configured: boolean;
+  signedIn: boolean;
+  email: string | null;
+  lastSync: number | null;
+  busy: boolean;
+  error: string | null;
+}
+
 export interface Note {
   id: string;
   text: string;
@@ -55,6 +64,10 @@ export interface Page {
 export const api = {
   newNote: (color: Color) => invoke<Note>("new_note_window", { color }),
   quit: () => invoke<void>("quit_app"),
+  syncStatus: () => invoke<SyncStatus>("sync_status"),
+  syncSignIn: () => invoke<SyncStatus>("sync_sign_in"),
+  syncSignOut: () => invoke<void>("sync_sign_out"),
+  syncNow: () => invoke<void>("sync_now"),
   getTrayIcon: () => invoke<string>("get_tray_icon"),
   setTrayIcon: (style: string) => invoke<void>("set_tray_icon", { style }),
   current: () => invoke<Note>("get_current_note"),

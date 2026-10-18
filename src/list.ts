@@ -2,7 +2,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { disable as autostartOff, enable as autostartOn, isEnabled as autostartIsOn } from "@tauri-apps/plugin-autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { api, COLORS, paperOf, type Color, type NoteSummary } from "./api";
+import { api, COLORS, paperOf, type Color, type NoteSummary, type SyncStatus } from "./api";
 import { isDark, onThemeChange } from "./theme";
 import { loadRender, onRenderChange, saveRender, type RenderOpts } from "./render";
 import { lang, onLangChange, t } from "./i18n";
@@ -187,7 +187,11 @@ function showSettings(on: boolean) {
   paneSettings.hidden = !on;
   btnSettings.classList.toggle("active", on);
   hideTip();
-  if (on) syncAutostart();
+  if (on) {
+    syncAutostart();
+    refreshSync();
+  }
+
   if (!on) q.focus();
 }
 btnSettings.addEventListener("click", () => showSettings(paneSettings.hidden));
@@ -267,6 +271,63 @@ autostart.addEventListener("change", async () => {
 });
 syncAutostart();
 
+// ---------- Google 同步 ----------
+const syncSwitch = $<HTMLInputElement>("sync-google");
+const syncText = $("sync-text");
+const syncNowBtn = $<HTMLButtonElement>("sync-now");
+let signingIn = false;
+let syncSt: SyncStatus | null = null;
+function renderSync(st = syncSt) {
+  if (!st) return;
+  syncSt = st;
+  syncSwitch.disabled = !st.configured || signingIn;
+  syncSwitch.checked = st.signedIn || signingIn;
+  syncNowBtn.hidden = !st.signedIn || st.busy;
+  syncText.classList.toggle("err", !!st.error);
+  syncText.textContent = !st.configured
+    ? t.syncNotConfigured
+    : signingIn
+      ? t.syncWaiting
+      : st.error
+        ? t.syncFailed(st.error)
+        : st.busy
+          ? t.syncBusy
+          : st.signedIn
+            ? st.lastSync
+              ? t.syncLast(st.email ?? "Google", new Date(st.lastSync).toLocaleString(lang === "zh" ? "zh-CN" : "en-US"))
+              : t.syncNever(st.email ?? "Google")
+            : t.syncOff;
+}
+async function refreshSync() {
+  try {
+    renderSync(await api.syncStatus());
+  } catch {}
+}
+syncSwitch.addEventListener("change", async () => {
+  if (syncSwitch.checked) {
+    signingIn = true;
+    renderSync();
+    try {
+      const st = await api.syncSignIn();
+      signingIn = false;
+      renderSync(st);
+    } catch (err) {
+      signingIn = false;
+      renderSync({ ...(syncSt as SyncStatus), signedIn: false, error: String(err) });
+    }
+  } else {
+    await api.syncSignOut().catch(() => {});
+    refreshSync();
+  }
+});
+syncNowBtn.addEventListener("click", () => api.syncNow());
+listen<SyncStatus>("sync-status", (e) => renderSync(e.payload));
+// 同步下载了笔记：列表开着就刷新
+listen("notes-synced", () => {
+  if (!paneList.hidden) resetList();
+});
+refreshSync();
+
 syncToggles(loadRender());
 onRenderChange(syncToggles);
 
@@ -297,6 +358,7 @@ listen("list-shown", () => {
 });
 
 function applyTexts() {
+  renderSync();
   applyI18n();
   renderTrayStyles();
   renderChips();

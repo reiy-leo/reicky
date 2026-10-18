@@ -169,7 +169,7 @@ impl Store {
         Ok(n)
     }
 
-    fn all(&self) -> Vec<Note> {
+    pub fn all(&self) -> Vec<Note> {
         let Ok(rd) = fs::read_dir(self.root.join("notes")) else { return vec![] };
         rd.filter_map(|e| e.ok())
             .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("json"))

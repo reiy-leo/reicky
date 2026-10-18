@@ -1,4 +1,5 @@
 mod store;
+mod sync;
 
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -12,6 +13,8 @@ struct AppState {
     data_dir: std::path::PathBuf,
     /// 列表面板上次因失焦收起的时间：点菜单栏图标时失焦先触发，避免“刚收起又弹出”
     list_hidden_at: Mutex<Option<Instant>>,
+    /// Google Drive 同步
+    sync: sync::Sync,
 }
 
 const LIST_W: f64 = 320.0;
@@ -312,6 +315,38 @@ fn set_tray_icon(app: AppHandle, state: State<AppState>, style: String) -> Res<(
     Ok(())
 }
 
+// ---------- Google 同步 ----------
+
+#[tauri::command]
+fn sync_status(state: State<AppState>) -> sync::Status {
+    state.sync.status(&state.data_dir)
+}
+
+/// 打开浏览器登录，成功后立刻同步一次。async：等回调期间不卡界面
+#[tauri::command]
+async fn sync_sign_in(app: AppHandle) -> Res<sync::Status> {
+    let a = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sync::sign_in(&a)?;
+        sync::run(&a);
+        Ok::<_, String>(())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    let st = app.state::<AppState>();
+    Ok(st.sync.status(&st.data_dir))
+}
+
+#[tauri::command]
+async fn sync_sign_out(app: AppHandle) -> Res<()> {
+    tauri::async_runtime::spawn_blocking(move || sync::sign_out(&app)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn sync_now(app: AppHandle) -> Res<()> {
+    tauri::async_runtime::spawn_blocking(move || sync::run(&app)).await.map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn quit_app(app: AppHandle) {
     app.exit(0);
@@ -475,7 +510,8 @@ pub fn run() {
         .setup(|app| {
             let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
             let store = Store::open(dir.clone())?;
-            app.manage(AppState { store: Mutex::new(store), data_dir: dir, list_hidden_at: Mutex::new(None) });
+            app.manage(AppState { store: Mutex::new(store), data_dir: dir, list_hidden_at: Mutex::new(None), sync: Default::default() });
+            sync::start(app.handle());
             // 不在 Dock 显示（打包后 Info.plist 的 LSUIElement 也会生效，这里保证 dev 模式一致）
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -517,6 +553,10 @@ pub fn run() {
             show_main_window,
             get_tray_icon,
             set_tray_icon,
+            sync_status,
+            sync_sign_in,
+            sync_sign_out,
+            sync_now,
             quit_app
         ])
         .run(tauri::generate_context!())

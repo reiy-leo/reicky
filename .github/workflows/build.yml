@@ -49,6 +49,9 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Google 同步用的桌面 OAuth 客户端，编译时写进二进制（仓库 Settings → Secrets → Actions）
+          REICKY_GOOGLE_CLIENT_ID: ${{ secrets.REICKY_GOOGLE_CLIENT_ID }}
+          REICKY_GOOGLE_CLIENT_SECRET: ${{ secrets.REICKY_GOOGLE_CLIENT_SECRET }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
           releaseName: reicky ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}

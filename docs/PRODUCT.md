@@ -20,7 +20,7 @@ macOS（含 Intel x86_64）/ Windows / Linux。不做移动端。界面适配各
 - 多语言：中文、English，默认跟随系统
 
 ## 以后再做
-- 同步：Google Drive appDataFolder、WebDAV（可选后端，每条笔记一个文件）
+- 同步：Google Drive appDataFolder（已做，配置见 docs/GOOGLE_SYNC.md）、WebDAV（可选后端，每条笔记一个文件，未做）
 - 全局快捷键唤出 / 新建便签
 - 窗口置顶、开机自启
 - 列表搜索
