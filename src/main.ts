@@ -35,6 +35,40 @@ function flash(msg: string) {
   statusTimer = window.setTimeout(() => (statusEl.textContent = ""), 2200);
 }
 
+// ---------- 悬停提示：自绘 tooltip（原生 title 在置顶/未激活窗口里常常不出），夹在窗口内 ----------
+const tip = document.createElement("div");
+tip.className = "tip";
+tip.hidden = true;
+document.body.append(tip);
+let tipTimer: number | undefined;
+let tipFor: HTMLElement | null = null;
+function hideTip() {
+  clearTimeout(tipTimer);
+  tipFor = null;
+  tip.hidden = true;
+}
+function showTip(el: HTMLElement) {
+  tip.textContent = el.dataset.tip ?? "";
+  tip.hidden = false;
+  const r = el.getBoundingClientRect();
+  const w = tip.offsetWidth, h = tip.offsetHeight, pad = 4;
+  const left = Math.min(Math.max(pad, r.left + r.width / 2 - w / 2), innerWidth - w - pad);
+  const above = r.top - h - 6;
+  tip.style.left = `${left}px`;
+  tip.style.top = `${above >= pad ? above : r.bottom + 6}px`;
+}
+document.addEventListener("mouseover", (e) => {
+  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-tip]");
+  if (el === tipFor) return;
+  hideTip();
+  if (!el || !el.dataset.tip) return;
+  tipFor = el;
+  tipTimer = window.setTimeout(() => showTip(el), 350);
+});
+document.addEventListener("mousedown", hideTip, true);
+document.addEventListener("mouseleave", hideTip);
+window.addEventListener("blur", hideTip);
+
 // ---------- 文案 ----------
 function applyTexts() {
   editor.placeholder = t.placeholder;
@@ -43,7 +77,7 @@ function applyTexts() {
   });
   document.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((el) => {
     const v = String(t[el.dataset.i18nTitle as keyof typeof t] ?? "");
-    el.title = v;
+    el.dataset.tip = v;
     el.setAttribute("aria-label", v);
   });
   document.querySelectorAll<HTMLElement>(".lang").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
@@ -62,7 +96,7 @@ function renderPaths() {
       li.className = "path";
       const name = document.createElement("span");
       name.textContent = p.split(/[\\/]/).filter(Boolean).pop() ?? p;
-      name.title = `${p}\n${t.pathTip}`;
+      name.dataset.tip = `${p}\n${t.pathTip}`;
       name.addEventListener("click", (e) => {
         const run = e.altKey ? revealItemInDir(p) : openPath(p);
         run.catch((err) => flash(t.openFailed(err)));
@@ -70,7 +104,7 @@ function renderPaths() {
       const rm = document.createElement("button");
       rm.className = "path-rm";
       rm.textContent = "×";
-      rm.title = t.pathRemove;
+      rm.dataset.tip = t.pathRemove;
       rm.setAttribute("aria-label", t.pathRemove);
       rm.addEventListener("click", () => api.removePath(n.id, p).then(setNote).catch((err) => flash(t.saveFailed(err))));
       li.append(name, rm);
@@ -101,7 +135,7 @@ function renderSwatches() {
       b.dataset.swatch = id;
       b.style.background = colorOf(id).paper;
       if (note) b.classList.toggle("active", note.color === id);
-      b.title = t.colors[id];
+      b.dataset.tip = t.colors[id];
       b.setAttribute("aria-label", t.colors[id]);
       b.addEventListener("click", async () => {
         if (!note) return;
@@ -168,8 +202,8 @@ let shape: Shape = (SHAPES as string[]).includes(localStorage.getItem(shapeKey) 
 function updateShapeTitle() {
   const name = { tall: t.shapeTall, wide: t.shapeWide, square: t.shapeSquare }[shape];
   const b = $("btn-shape");
-  b.title = `${t.shape}（${name}）`;
-  b.setAttribute("aria-label", b.title);
+  b.dataset.tip = `${t.shape}（${name}）`;
+  b.setAttribute("aria-label", b.dataset.tip);
   const [x, y, w, h] = ICON[shape];
   shapeIcon.setAttribute("x", String(x));
   shapeIcon.setAttribute("y", String(y));

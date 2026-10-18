@@ -111,7 +111,7 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 }
 .icon-btn:hover { background: var(--hover); color: var(--ink); }
 .icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--ink-soft); }
+.icon-btn svg .dot { fill: var(--paper); }
 
 [data-platform="windows"] .icon-btn { border-radius: 4px; }
 [data-platform="windows"] .icon-btn:hover { background: rgba(0, 0, 0, 0.06); }
@@ -181,3 +181,21 @@ body.is-note-window #btn-close-note { display: grid; }
 .langs { display: flex; gap: 2px; background: #ececea; padding: 2px; border-radius: calc(var(--radius) + 1px); }
 .lang { flex: 1; border: 0; background: transparent; padding: 1px 6px; border-radius: var(--radius); font-size: 11px; cursor: default; }
 .lang.active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+
+/* 悬停提示 */
+.tip {
+  position: fixed;
+  z-index: 100;
+  max-width: calc(100vw - 8px);
+  padding: 3px 7px;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: pre-line;
+  color: #fff;
+  background: rgba(30, 30, 28, 0.88);
+  border-radius: calc(var(--radius) - 1px);
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.tip[hidden] { display: none; }
+[data-platform="windows"] .tip { background: #fff; color: #1a1a1a; border: 1px solid #ccc; border-radius: 4px; }
