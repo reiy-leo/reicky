@@ -1,5 +1,6 @@
 // 笔记列表面板：独立窗口，从菜单栏图标下方或便签旁边弹出，失焦自动收起（Rust 端处理）
 import { listen } from "@tauri-apps/api/event";
+import { disable as autostartOff, enable as autostartOn, isEnabled as autostartIsOn } from "@tauri-apps/plugin-autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api, COLORS, paperOf, type Color, type NoteSummary } from "./api";
 import { isDark, onThemeChange } from "./theme";
@@ -78,28 +79,24 @@ function item(it: NoteSummary) {
   const li = document.createElement("li");
   li.className = "item";
   li.style.setProperty("--c", paperOf(it.color, isDark).paper);
-  const text = document.createElement("div");
+  // 一行：[开着标记] 标题（首行，过长省略） 时间
+  const row = document.createElement("div");
+  row.className = "item-row";
+  const text = document.createElement("span");
   text.className = "item-text";
-  text.textContent = it.preview || t.empty;
-  const meta = document.createElement("div");
-  meta.className = "item-meta";
-  const bits = [it.pathCount ? t.pathCount(it.pathCount) : ""];
-  if (it.main) bits.push(t.mainNote);
-  const left = document.createElement("span");
-  left.className = "meta-left";
-  left.textContent = bits.filter(Boolean).join(" · ");
+  text.textContent = it.preview.split("\n").find((l) => l.trim())?.trim() || t.empty;
   const time = document.createElement("span");
   time.className = "meta-time";
   time.textContent = fmtTime(it.modified);
   time.dataset.tip = new Date(it.modified).toLocaleString(lang === "zh" ? "zh-CN" : "en-US");
-  meta.append(left, time);
   if (it.open) {
     const dot = document.createElement("span");
     dot.className = "open-dot";
     dot.dataset.tip = t.isOpen;
-    left.prepend(dot);
+    row.append(dot);
   }
-  li.append(text, meta);
+  row.append(text, time);
+  li.append(row);
   if (it.archived) {
     const r = document.createElement("button");
     r.className = "lang restore";
@@ -190,6 +187,7 @@ function showSettings(on: boolean) {
   paneSettings.hidden = !on;
   btnSettings.classList.toggle("active", on);
   hideTip();
+  if (on) syncAutostart();
   if (!on) q.focus();
 }
 btnSettings.addEventListener("click", () => showSettings(paneSettings.hidden));
@@ -249,6 +247,26 @@ toggles.forEach((x) =>
     saveRender(o);
   }),
 );
+// 随系统启动：状态以系统为准，每次进设置页都读一次
+const autostart = $<HTMLInputElement>("autostart");
+async function syncAutostart() {
+  try {
+    autostart.checked = await autostartIsOn();
+  } catch {
+    autostart.disabled = true;
+  }
+}
+autostart.addEventListener("change", async () => {
+  const want = autostart.checked;
+  try {
+    await (want ? autostartOn() : autostartOff());
+  } catch (err) {
+    autostart.checked = !want;
+    flash(t.autostartFailed(err));
+  }
+});
+syncAutostart();
+
 syncToggles(loadRender());
 onRenderChange(syncToggles);
 

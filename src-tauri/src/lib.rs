@@ -470,6 +470,8 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        // 随系统启动：mac 用 LaunchAgent，Windows 注册表 Run，Linux ~/.config/autostart
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .setup(|app| {
             let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
             let store = Store::open(dir.clone())?;
