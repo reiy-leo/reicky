@@ -55,6 +55,8 @@ export interface Page {
 export const api = {
   newNote: (color: Color) => invoke<Note>("new_note_window", { color }),
   quit: () => invoke<void>("quit_app"),
+  getTrayIcon: () => invoke<string>("get_tray_icon"),
+  setTrayIcon: (style: string) => invoke<void>("set_tray_icon", { style }),
   current: () => invoke<Note>("get_current_note"),
   get: (id: string) => invoke<Note>("get_note", { id }),
   saveText: (id: string, text: string) => invoke<Note>("save_text", { id, text }),

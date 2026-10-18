@@ -252,5 +252,26 @@ body.archived #btn-paste, body.archived #btn-archive, body.archived .path-rm { d
 /* 列表面板底部：渲染开关 + 退出 */
 .lw-foot { height: 30px; gap: 10px; padding: 0 4px 0 10px; border-top: 1px solid var(--line); }
 .lw-foot .status { text-align: right; }
-.tog { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
-.tog input { margin: 0; width: 12px; height: 12px; accent-color: #3a82f7; }
+.lw-foot .status { flex: 1; }
+#btn-settings.active { color: var(--ink); background: var(--line); }
+
+/* 列表面板：两个页面（列表 / 设置）轮换 */
+body.list-window .pane:not([hidden]) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.set-head { display: flex; align-items: center; gap: 4px; padding: 8px 8px 6px 4px; border-bottom: 1px solid var(--line); }
+.set-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.set-body { flex: 1; overflow: auto; padding: 4px 12px 12px; }
+.set-group { padding: 10px 0; }
+.set-group + .set-group { border-top: 1px solid var(--line); }
+.set-label { font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; height: 28px; font-size: 13px; color: var(--ink); }
+.switch { appearance: none; -webkit-appearance: none; margin: 0; width: 28px; height: 16px; border-radius: 8px; background: var(--line); position: relative; transition: background 0.15s; flex: none; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.15s; }
+.switch:checked { background: #34c759; }
+.switch:checked::after { transform: translateX(12px); }
+.tray-styles { display: flex; gap: 6px; flex-wrap: wrap; }
+.tray-opt { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink); cursor: default; }
+.tray-opt svg { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tray-opt img { display: block; width: 22px; height: 22px; }
+:root[data-theme="dark"] .tray-opt img { filter: invert(1); }
+.tray-opt:hover { background: var(--line); }
+.tray-opt.active { border-color: #3a82f7; box-shadow: 0 0 0 1px #3a82f7; }

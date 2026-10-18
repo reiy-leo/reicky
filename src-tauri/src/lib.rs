@@ -8,6 +8,8 @@ use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder
 
 struct AppState {
     store: Mutex<Store>,
+    /// 应用数据目录：存菜单栏图标样式等小设置
+    data_dir: std::path::PathBuf,
     /// 列表面板上次因失焦收起的时间：点菜单栏图标时失焦先触发，避免“刚收起又弹出”
     list_hidden_at: Mutex<Option<Instant>>,
 }
@@ -251,6 +253,65 @@ fn pick_color(used: &[String], rnd: usize) -> &'static str {
     pool[rnd % pool.len()]
 }
 
+/// 菜单栏图标样式：default = 原来的图标，其余是 lucide 图标
+const TRAY_STYLES: &[&str] = &["default", "layout-freeform", "layout-grid-circles", "waypoints", "bubbles"];
+const TRAY_FILE: &str = "tray-icon";
+
+macro_rules! tray_png {
+    ($name:literal) => {{
+        // macOS：黑色模板图标，系统按菜单栏明暗自动反色；其他平台：白色线条（任务栏多为深色）
+        #[cfg(target_os = "macos")]
+        let b: &[u8] = include_bytes!(concat!("../icons/tray/", $name, "-black.png"));
+        #[cfg(not(target_os = "macos"))]
+        let b: &[u8] = include_bytes!(concat!("../icons/tray/", $name, "-white.png"));
+        b
+    }};
+}
+
+fn tray_image(style: &str) -> tauri::Result<tauri::image::Image<'static>> {
+    let bytes: &[u8] = match style {
+        "layout-freeform" => tray_png!("layout-freeform"),
+        "layout-grid-circles" => tray_png!("layout-grid-circles"),
+        "waypoints" => tray_png!("waypoints"),
+        "bubbles" => tray_png!("bubbles"),
+        _ => {
+            #[cfg(target_os = "macos")]
+            let b: &[u8] = include_bytes!("../icons/tray-template.png");
+            #[cfg(not(target_os = "macos"))]
+            let b: &[u8] = include_bytes!("../icons/32x32.png");
+            b
+        }
+    };
+    tauri::image::Image::from_bytes(bytes)
+}
+
+fn saved_tray_style(dir: &std::path::Path) -> String {
+    std::fs::read_to_string(dir.join(TRAY_FILE))
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| TRAY_STYLES.contains(&s.as_str()))
+        .unwrap_or_else(|| "default".into())
+}
+
+#[tauri::command]
+fn get_tray_icon(state: State<AppState>) -> String {
+    saved_tray_style(&state.data_dir)
+}
+
+#[tauri::command]
+fn set_tray_icon(app: AppHandle, state: State<AppState>, style: String) -> Res<()> {
+    if !TRAY_STYLES.contains(&style.as_str()) {
+        return Err(format!("未知图标样式：{style}"));
+    }
+    let tray = app.tray_by_id("main").ok_or("找不到菜单栏图标")?;
+    tray.set_icon(Some(tray_image(&style).map_err(|e| e.to_string())?)).map_err(|e| e.to_string())?;
+    #[cfg(target_os = "macos")]
+    tray.set_icon_as_template(true).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&state.data_dir).map_err(|e| e.to_string())?;
+    std::fs::write(state.data_dir.join(TRAY_FILE), &style).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 fn quit_app(app: AppHandle) {
     app.exit(0);
@@ -351,11 +412,9 @@ fn build_list_window(app: &tauri::App) -> tauri::Result<()> {
 }
 
 fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
-    // macOS 用黑白模板图标，跟随菜单栏明暗；其他平台用应用图标
-    #[cfg(target_os = "macos")]
-    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
-    #[cfg(not(target_os = "macos"))]
-    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/32x32.png"))?;
+    // macOS 用黑白模板图标，跟随菜单栏明暗；样式在设置里选
+    let style = saved_tray_style(&app.state::<AppState>().data_dir);
+    let icon = tray_image(&style)?;
 
     let builder = TrayIconBuilder::with_id("main")
         .icon(icon)
@@ -413,8 +472,8 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-            let store = Store::open(dir)?;
-            app.manage(AppState { store: Mutex::new(store), list_hidden_at: Mutex::new(None) });
+            let store = Store::open(dir.clone())?;
+            app.manage(AppState { store: Mutex::new(store), data_dir: dir, list_hidden_at: Mutex::new(None) });
             // 不在 Dock 显示（打包后 Info.plist 的 LSUIElement 也会生效，这里保证 dev 模式一致）
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -454,6 +513,8 @@ pub fn run() {
             new_note_window,
             show_list,
             show_main_window,
+            get_tray_icon,
+            set_tray_icon,
             quit_app
         ])
         .run(tauri::generate_context!())

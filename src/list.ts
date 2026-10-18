@@ -158,6 +158,62 @@ q.addEventListener("input", () => {
 
 $("btn-quit").addEventListener("click", () => api.quit());
 
+// ---------- 设置页 ----------
+const paneList = $("pane-list");
+const paneSettings = $("pane-settings");
+const btnSettings = $("btn-settings");
+function showSettings(on: boolean) {
+  paneList.hidden = on;
+  paneSettings.hidden = !on;
+  btnSettings.classList.toggle("active", on);
+  hideTip();
+  if (!on) q.focus();
+}
+btnSettings.addEventListener("click", () => showSettings(paneSettings.hidden));
+$("btn-back").addEventListener("click", () => showSettings(false));
+
+// 菜单栏图标样式（lucide 图标；default = 原图标）
+const TRAY_ICONS: Record<string, string> = {
+  default: "",
+  "layout-freeform": '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="4" rx="1"/><rect width="7" height="7" x="4" y="14" rx="1"/>',
+  "layout-grid-circles": '<circle cx="17.5" cy="17.5" r="3.5"/><circle cx="17.5" cy="6.5" r="3.5"/><circle cx="6.5" cy="17.5" r="3.5"/><circle cx="6.5" cy="6.5" r="3.5"/>',
+  waypoints: '<path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>',
+  bubbles: '<path d="M7.001 15.085A1.5 1.5 0 0 1 9 16.5"/><circle cx="18.5" cy="8.5" r="3.5"/><circle cx="7.5" cy="16.5" r="5.5"/><circle cx="7.5" cy="4.5" r="2.5"/>',
+};
+const trayBox = $("tray-styles");
+let trayStyle = "default";
+function renderTrayStyles() {
+  trayBox.replaceChildren(
+    ...Object.entries(TRAY_ICONS).map(([id, svg]) => {
+      const b = document.createElement("button");
+      b.className = "tray-opt";
+      b.classList.toggle("active", id === trayStyle);
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", String(id === trayStyle));
+      b.dataset.tip = t.trayStyles[id];
+      b.setAttribute("aria-label", t.trayStyles[id]);
+      b.innerHTML = svg
+        ? `<svg viewBox="0 0 24 24">${svg}</svg>`
+        : '<img src="/tray-template.png" alt="" draggable="false" />';
+      b.addEventListener("click", async () => {
+        if (id === trayStyle) return;
+        try {
+          await api.setTrayIcon(id);
+          trayStyle = id;
+          renderTrayStyles();
+        } catch (err) {
+          flash(t.trayFailed(err));
+        }
+      });
+      return b;
+    }),
+  );
+}
+api.getTrayIcon().then((s) => {
+  trayStyle = s;
+  renderTrayStyles();
+}).catch(() => {});
+
 // ---------- 渲染开关（作用于所有便签窗口） ----------
 const toggles = document.querySelectorAll<HTMLInputElement>("[data-render]");
 function syncToggles(o: RenderOpts) {
@@ -175,7 +231,8 @@ onRenderChange(syncToggles);
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    if (q.value) {
+    if (!paneSettings.hidden) showSettings(false);
+    else if (q.value) {
       q.value = "";
       resetList();
     } else win.hide();
@@ -193,12 +250,14 @@ document.addEventListener("keydown", (e) => {
 
 // 每次弹出都刷新（开着/关着的状态、别处的修改）
 listen("list-shown", () => {
+  showSettings(false);
   resetList();
   q.focus();
 });
 
 function applyTexts() {
   applyI18n();
+  renderTrayStyles();
   renderChips();
   resetList();
 }
