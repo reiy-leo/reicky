@@ -1,14 +1,16 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { hasRenderable, lineEnd, loadRender, onRenderChange, renderText, toggleTodo } from "./render";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { api, colorOf, COLORS, paperOf, type Note } from "./api";
 import { isDark, onThemeChange, setThemeMode, themeMode, type ThemeMode } from "./theme";
-import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
+import { broadcastLang, lang, onLangChange, setLang, t, type Lang } from "./i18n";
 import { $, applyI18n, hideTip } from "./common";
 const editor = $<HTMLTextAreaElement>("editor");
 const pathsEl = $<HTMLUListElement>("paths");
+const view = $("view");
 const statusEl = $("status");
 const palette = $("palette");
 const swatches = $("swatches");
@@ -82,9 +84,13 @@ function setNote(n: Note, force = false) {
   root.setProperty("--paper", pe.paper);
   root.setProperty("--paper-edge", pe.edge);
   swatches.querySelectorAll<HTMLElement>(".swatch").forEach((b) => b.classList.toggle("active", b.dataset.swatch === c.id));
-  if (force || document.activeElement !== editor) {
+  if (force || document.activeElement !== editor || viewing) {
     if (editor.value !== n.text) editor.value = n.text;
   }
+  // 已归档：只读，可以选中和拷贝
+  editor.readOnly = n.archived;
+  document.body.classList.toggle("archived", n.archived);
+  if (viewing) showView();
   renderPaths();
   if (!isMain) win.setTitle(n.text.split("\n")[0].slice(0, 40) || "reicky").catch(() => {});
 }
@@ -100,7 +106,7 @@ function renderSwatches() {
       b.dataset.tip = t.colors[id];
       b.setAttribute("aria-label", t.colors[id]);
       b.addEventListener("click", async () => {
-        if (!note) return;
+        if (!note || note.archived) return flash(t.readonlyArchived);
         palette.hidden = true;
         setNote(await api.setColor(note.id, id));
       });
@@ -112,7 +118,7 @@ function renderSwatches() {
 // ---------- 自动保存 ----------
 let saveTimer: number | undefined;
 function flushSave() {
-  if (saveTimer === undefined || !note) return;
+  if (saveTimer === undefined || !note || note.archived) return;
   clearTimeout(saveTimer);
   saveTimer = undefined;
   const id = note.id;
@@ -152,6 +158,7 @@ document.querySelectorAll<HTMLButtonElement>(".lang").forEach((b) =>
   b.addEventListener("click", () => {
     setLang(b.dataset.lang as Lang);
     applyTexts();
+    broadcastLang();
   }),
 );
 onLangChange(applyTexts);
@@ -269,6 +276,7 @@ $("btn-copy").addEventListener("click", async () => {
 // mousedown 不抢焦点，保住编辑器里的光标位置
 for (const id of ["btn-copy", "btn-paste"]) $(id).addEventListener("mousedown", (e) => e.preventDefault());
 $("btn-paste").addEventListener("click", async () => {
+  if (note?.archived) return flash(t.readonlyArchived);
   try {
     const text = await readText();
     if (!text) return flash(t.clipEmpty);
@@ -297,6 +305,7 @@ getCurrentWebview().onDragDropEvent(async (ev) => {
   else if (p.type === "drop") {
     document.body.classList.remove("dragging");
     if (!note || p.paths.length === 0) return;
+    if (note.archived) return flash(t.readonlyArchived);
     try {
       setNote(await api.addPaths(note.id, p.paths));
       flash(t.pathsAdded(p.paths.length));
@@ -311,11 +320,68 @@ listen<Note>("note-changed", (e) => {
   if (e.payload.id === note?.id) setNote(e.payload);
 });
 
+// ---------- 渲染：窗口失焦时显示渲染结果，点一下回到编辑 ----------
+let renderOpts = loadRender();
+let viewing = false;
+function showView() {
+  if (!note || !hasRenderable(editor.value, renderOpts)) return showEdit();
+  renderText(view, editor.value, renderOpts);
+  view.scrollTop = editor.scrollTop;
+  editor.hidden = true;
+  view.hidden = false;
+  viewing = true;
+}
+function showEdit(line?: number) {
+  if (viewing) editor.scrollTop = view.scrollTop;
+  view.hidden = true;
+  editor.hidden = false;
+  viewing = false;
+  if (line !== undefined) {
+    editor.focus();
+    const pos = lineEnd(editor.value, line);
+    editor.setSelectionRange(pos, pos);
+  }
+}
+win.onFocusChanged(({ payload: focused }) => {
+  if (!focused) {
+    flushSave();
+    palette.hidden = true;
+    showView();
+  }
+});
+view.addEventListener("click", (e) => {
+  const el = e.target as HTMLElement;
+  const a = el.closest<HTMLElement>("a[data-href]");
+  if (a) return void openUrl(a.dataset.href!).catch((err) => flash(t.openFailed(err)));
+  const box = el.closest<HTMLElement>("[data-check]");
+  if (box) {
+    if (!note || note.archived) return flash(t.readonlyArchived);
+    editor.value = toggleTodo(editor.value, Number(box.dataset.check));
+    editor.dispatchEvent(new Event("input"));
+    flushSave();
+    return showView();
+  }
+  if (!window.getSelection()?.isCollapsed) return; // 在拖选文字，别切
+  const row = el.closest<HTMLElement>(".r-line");
+  showEdit(row ? Number(row.dataset.line) : editor.value.split("\n").length - 1);
+});
+// 渲染状态下直接打字：切回编辑，光标放到末尾
+document.addEventListener("keydown", (e) => {
+  if (!viewing || e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1 && e.key !== "Enter") return;
+  showEdit(editor.value.split("\n").length - 1);
+}, true);
+onRenderChange((o) => {
+  renderOpts = o;
+  if (viewing || !document.hasFocus()) showView();
+});
+
 // ---------- 启动 ----------
 (async () => {
   applyTexts();
   try {
     setNote(noteParam ? await api.get(noteParam) : await api.current(), true);
+    if (note?.archived) flash(t.readonlyArchived);
+    if (!document.hasFocus()) showView();
   } catch (err) {
     flash(t.loadFailed(err));
   }

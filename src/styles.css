@@ -233,3 +233,24 @@ body.list-window .list-scroll { flex: 1; overflow: auto; }
 .lw-foot { height: 20px; display: flex; align-items: center; padding: 0 8px; }
 .open-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #34c759; vertical-align: 1px; }
 .restore { margin-top: 4px; }
+
+/* ---------- 渲染视图（窗口失焦时） ---------- */
+.view:not([hidden]) { display: block; overflow: auto; white-space: pre-wrap; word-break: break-word; cursor: text; -webkit-user-select: text; user-select: text; }
+.r-line { min-height: 1.5em; }
+.view a { color: #2a6fd6; text-decoration: underline; text-decoration-color: rgba(42, 111, 214, 0.4); text-underline-offset: 2px; cursor: pointer; }
+:root[data-theme="dark"] .view a { color: #7fb1ff; text-decoration-color: rgba(127, 177, 255, 0.4); }
+.r-li, .r-todo { display: flex; gap: 0.45em; align-items: baseline; }
+.r-mark { flex: none; min-width: 0.9em; color: var(--ink-soft); text-align: right; }
+.r-box { flex: none; width: 13px; height: 13px; border: 1.5px solid var(--ink-soft); border-radius: 3px; position: relative; top: 2px; cursor: pointer; }
+.r-todo.done .r-box { background: var(--ink-soft); border-color: transparent; }
+.r-todo.done .r-box::after { content: ""; position: absolute; left: 3.5px; top: 0.5px; width: 3px; height: 7px; border: solid var(--paper); border-width: 0 1.8px 1.8px 0; transform: rotate(45deg); }
+.r-todo.done > span:last-child { color: var(--ink-soft); text-decoration: line-through; }
+
+/* 已归档：只读 */
+body.archived #btn-paste, body.archived #btn-archive, body.archived .path-rm { display: none; }
+
+/* 列表面板底部：渲染开关 + 退出 */
+.lw-foot { height: 30px; gap: 10px; padding: 0 4px 0 10px; border-top: 1px solid var(--line); }
+.lw-foot .status { text-align: right; }
+.tog { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
+.tog input { margin: 0; width: 12px; height: 12px; accent-color: #3a82f7; }

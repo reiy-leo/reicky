@@ -1,3 +1,4 @@
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 // 外观：跟随系统 / 浅色 / 深色。存 localStorage，所有窗口通过 storage 事件同步。
@@ -26,6 +27,7 @@ export function setThemeMode(m: ThemeMode) {
   themeMode = m;
   localStorage.setItem(KEY, m);
   apply();
+  emit("theme-changed", m).catch(() => {});
 }
 
 export function onThemeChange(cb: () => void) {
@@ -33,9 +35,9 @@ export function onThemeChange(cb: () => void) {
 }
 
 media.addEventListener("change", () => themeMode === "system" && apply());
-window.addEventListener("storage", (e) => {
-  if (e.key !== KEY) return;
-  themeMode = load();
+listen<ThemeMode>("theme-changed", (e) => {
+  if (e.payload === themeMode) return;
+  themeMode = e.payload;
   apply();
 });
 apply();

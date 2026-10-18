@@ -1,3 +1,4 @@
+import { emit, listen } from "@tauri-apps/api/event";
 // 界面语言：中文 / English。默认跟随系统，手动选择存在 localStorage。
 export type Lang = "zh" | "en";
 
@@ -16,6 +17,10 @@ const dict = {
     tabNotes: "笔记",
     tabArchived: "已归档",
     language: "语言",
+    renderLinks: "链接",
+    renderLists: "列表",
+    renderTodo: "待办",
+    readonlyArchived: "已归档，只读",
     themeSystem: "跟随系统",
     themeLight: "浅色",
     themeDark: "深色",
@@ -70,6 +75,10 @@ const dict = {
     tabNotes: "Notes",
     tabArchived: "Archived",
     language: "Language",
+    renderLinks: "Links",
+    renderLists: "Lists",
+    renderTodo: "To-dos",
+    readonlyArchived: "Archived · read-only",
     themeSystem: "Auto",
     themeLight: "Light",
     themeDark: "Dark",
@@ -132,12 +141,14 @@ export function setLang(l: Lang) {
 
 document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
 
-// 其他窗口切换语言时同步（同源 localStorage 会触发 storage 事件）
+// 其他窗口切换语言时同步（用 Tauri 事件广播，WebView 之间不一定互发 storage 事件）
+export function broadcastLang() {
+  emit("lang-changed", lang).catch(() => {});
+}
 export function onLangChange(cb: () => void) {
-  window.addEventListener("storage", (e) => {
-    if (e.key === KEY && (e.newValue === "zh" || e.newValue === "en")) {
-      setLang(e.newValue);
-      cb();
-    }
+  listen<Lang>("lang-changed", (e) => {
+    if (e.payload === lang || (e.payload !== "zh" && e.payload !== "en")) return;
+    setLang(e.payload);
+    cb();
   });
 }

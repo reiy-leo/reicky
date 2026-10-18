@@ -12,12 +12,6 @@
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></svg>
         <input id="q" type="search" spellcheck="false" autocomplete="off" data-i18n-placeholder="search" />
       </div>
-      <button id="btn-new" class="icon-btn" data-i18n-title="newNote">
-        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-      </button>
-      <button id="btn-quit" class="icon-btn" data-i18n-title="quit">
-        <svg viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0" /></svg>
-      </button>
     </header>
     <div class="lw-filters" data-tauri-drag-region>
       <div class="tabs" role="tablist">
@@ -30,7 +24,15 @@
       <ul id="list" class="list"></ul>
       <div id="list-sentinel" class="sentinel"></div>
     </div>
-    <footer class="lw-foot"><span id="status" class="status"></span></footer>
+    <footer class="lw-foot">
+      <label class="tog"><input type="checkbox" data-render="links" /><span data-i18n="renderLinks"></span></label>
+      <label class="tog"><input type="checkbox" data-render="lists" /><span data-i18n="renderLists"></span></label>
+      <label class="tog"><input type="checkbox" data-render="todo" /><span data-i18n="renderTodo"></span></label>
+      <span id="status" class="status"></span>
+      <button id="btn-quit" class="icon-btn" data-i18n-title="quit">
+        <svg viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0" /></svg>
+      </button>
+    </footer>
     <script type="module" src="/src/list.ts"></script>
   </body>
 </html>

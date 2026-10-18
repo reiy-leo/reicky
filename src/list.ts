@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api, colorOf, COLORS, paperOf, type Color, type NoteSummary } from "./api";
 import { isDark, onThemeChange } from "./theme";
+import { loadRender, onRenderChange, saveRender, type RenderOpts } from "./render";
 import { lang, onLangChange, t } from "./i18n";
 import { $, applyI18n, hideTip } from "./common";
 
@@ -155,8 +156,22 @@ q.addEventListener("input", () => {
   qTimer = window.setTimeout(resetList, 150);
 });
 
-$("btn-new").addEventListener("click", () => api.newNote(color ?? "yellow").catch((err) => flash(t.saveFailed(err))));
 $("btn-quit").addEventListener("click", () => api.quit());
+
+// ---------- 渲染开关（作用于所有便签窗口） ----------
+const toggles = document.querySelectorAll<HTMLInputElement>("[data-render]");
+function syncToggles(o: RenderOpts) {
+  toggles.forEach((x) => (x.checked = o[x.dataset.render as keyof RenderOpts]));
+}
+toggles.forEach((x) =>
+  x.addEventListener("change", () => {
+    const o = loadRender();
+    o[x.dataset.render as keyof RenderOpts] = x.checked;
+    saveRender(o);
+  }),
+);
+syncToggles(loadRender());
+onRenderChange(syncToggles);
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
