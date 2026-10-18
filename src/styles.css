@@ -185,7 +185,9 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 .item::before { content: ""; position: absolute; left: 3px; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--c); }
 .item:hover { background: var(--item-hover); }
 .item-text { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: pre-wrap; word-break: break-word; }
-.item-meta { margin-top: 2px; font-size: 11px; color: var(--muted); }
+.item-meta { margin-top: 2px; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.meta-left { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta-time { flex: none; font-variant-numeric: tabular-nums; }
 .empty { padding: 24px; text-align: center; color: var(--muted); }
 .sentinel { height: 1px; }
 

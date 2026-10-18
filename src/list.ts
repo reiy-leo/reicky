@@ -29,12 +29,28 @@ let gen = 0; // 每次重置 +1，丢掉过期的请求结果
 let showArchived = false;
 let color: Color | undefined;
 
+// 今天：具体时间；更早：按日历算相差几年几月几天，如 3d ago / 1m 2d ago / 1y 3m 2d ago
 function fmtTime(ms: number) {
   const d = new Date(ms);
-  const loc = lang === "zh" ? "zh-CN" : "en-US";
-  return d.toDateString() === new Date().toDateString()
-    ? d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString(loc, { year: "numeric", month: "short", day: "numeric" });
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    const loc = lang === "zh" ? "zh-CN" : "en-US";
+    return d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
+  }
+  let y = now.getFullYear() - d.getFullYear();
+  let m = now.getMonth() - d.getMonth();
+  let day = now.getDate() - d.getDate();
+  if (day < 0) {
+    m--;
+    day += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); // 上个月的天数
+  }
+  if (m < 0) {
+    y--;
+    m += 12;
+  }
+  if (y < 0) return d.toLocaleDateString(); // 时间在未来（时钟被调过）
+  const parts = [y && `${y}y`, m && `${m}m`, day && `${day}d`].filter(Boolean);
+  return `${parts.join(" ") || "1d"} ago`;
 }
 
 function renderChips() {
@@ -67,14 +83,21 @@ function item(it: NoteSummary) {
   text.textContent = it.preview || t.empty;
   const meta = document.createElement("div");
   meta.className = "item-meta";
-  const bits = [fmtTime(it.modified), it.pathCount ? t.pathCount(it.pathCount) : ""];
+  const bits = [it.pathCount ? t.pathCount(it.pathCount) : ""];
   if (it.main) bits.push(t.mainNote);
-  meta.textContent = bits.filter(Boolean).join(" · ");
+  const left = document.createElement("span");
+  left.className = "meta-left";
+  left.textContent = bits.filter(Boolean).join(" · ");
+  const time = document.createElement("span");
+  time.className = "meta-time";
+  time.textContent = fmtTime(it.modified);
+  time.dataset.tip = new Date(it.modified).toLocaleString(lang === "zh" ? "zh-CN" : "en-US");
+  meta.append(left, time);
   if (it.open) {
     const dot = document.createElement("span");
     dot.className = "open-dot";
     dot.dataset.tip = t.isOpen;
-    meta.prepend(dot);
+    left.prepend(dot);
   }
   li.append(text, meta);
   if (it.archived) {
