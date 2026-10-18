@@ -3,7 +3,8 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { api, colorOf, COLORS, type Note } from "./api";
+import { api, colorOf, COLORS, paperOf, type Note } from "./api";
+import { isDark, onThemeChange, setThemeMode, themeMode, type ThemeMode } from "./theme";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
 import { $, applyI18n, hideTip } from "./common";
 const editor = $<HTMLTextAreaElement>("editor");
@@ -31,6 +32,7 @@ function applyTexts() {
   editor.placeholder = t.placeholder;
   applyI18n();
   document.querySelectorAll<HTMLElement>(".lang").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
+  renderThemeOpts();
   renderSwatches();
   updateShapeTitle();
   renderPin();
@@ -75,9 +77,10 @@ function renderPaths() {
 function setNote(n: Note, force = false) {
   note = n;
   const c = colorOf(n.color);
+  const pe = paperOf(n.color, isDark);
   const root = document.documentElement.style;
-  root.setProperty("--paper", c.paper);
-  root.setProperty("--paper-edge", c.edge);
+  root.setProperty("--paper", pe.paper);
+  root.setProperty("--paper-edge", pe.edge);
   swatches.querySelectorAll<HTMLElement>(".swatch").forEach((b) => b.classList.toggle("active", b.dataset.swatch === c.id));
   if (force || document.activeElement !== editor) {
     if (editor.value !== n.text) editor.value = n.text;
@@ -92,7 +95,7 @@ function renderSwatches() {
       const b = document.createElement("button");
       b.className = "swatch";
       b.dataset.swatch = id;
-      b.style.background = colorOf(id).paper;
+      b.style.background = paperOf(id, isDark).paper;
       if (note) b.classList.toggle("active", note.color === id);
       b.dataset.tip = t.colors[id];
       b.setAttribute("aria-label", t.colors[id]);
@@ -132,6 +135,19 @@ $("btn-color").addEventListener("click", (e) => {
 document.addEventListener("click", (e) => {
   if (!palette.hidden && !palette.contains(e.target as Node)) palette.hidden = true;
 });
+// ---------- 外观 ----------
+function renderThemeOpts() {
+  document.querySelectorAll<HTMLElement>(".theme-opt").forEach((b) => b.classList.toggle("active", b.dataset.themeMode === themeMode));
+}
+document.querySelectorAll<HTMLButtonElement>(".theme-opt").forEach((b) =>
+  b.addEventListener("click", () => setThemeMode(b.dataset.themeMode as ThemeMode)),
+);
+onThemeChange(() => {
+  renderThemeOpts();
+  renderSwatches();
+  if (note) setNote(note);
+});
+
 document.querySelectorAll<HTMLButtonElement>(".lang").forEach((b) =>
   b.addEventListener("click", () => {
     setLang(b.dataset.lang as Lang);

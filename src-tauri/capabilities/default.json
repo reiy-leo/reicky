@@ -15,6 +15,7 @@
     "core:window:allow-close",
     "core:window:allow-hide",
     "core:window:allow-set-always-on-top",
+    "core:window:allow-set-theme",
     "window-state:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",

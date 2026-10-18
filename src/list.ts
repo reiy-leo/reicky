@@ -1,7 +1,8 @@
 // 笔记列表面板：独立窗口，从菜单栏图标下方或便签旁边弹出，失焦自动收起（Rust 端处理）
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { api, colorOf, COLORS, type Color, type NoteSummary } from "./api";
+import { api, colorOf, COLORS, paperOf, type Color, type NoteSummary } from "./api";
+import { isDark, onThemeChange } from "./theme";
 import { lang, onLangChange, t } from "./i18n";
 import { $, applyI18n, hideTip } from "./common";
 
@@ -37,10 +38,10 @@ function fmtTime(ms: number) {
 
 function renderChips() {
   chips.replaceChildren(
-    ...COLORS.map(({ id, paper, dot }) => {
+    ...COLORS.map(({ id, dot }) => {
       const b = document.createElement("button");
       b.className = "chip";
-      b.style.background = paper;
+      b.style.background = paperOf(id, isDark).paper;
       b.style.borderColor = dot;
       b.classList.toggle("active", color === id);
       b.dataset.tip = color === id ? t.filterClear : t.filterBy(t.colors[id]);
@@ -188,3 +189,5 @@ function applyTexts() {
 }
 onLangChange(applyTexts);
 applyTexts();
+
+onThemeChange(renderChips);

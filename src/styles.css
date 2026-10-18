@@ -10,7 +10,35 @@
   --font: system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
   --bar-h: 30px;
+  --pop: #fff;            /* 弹层 */
+  --seg: #ececea;         /* 分段控件底 */
+  --seg-on: #fff;         /* 分段控件选中 */
+  --panel: #fbfbfa;       /* 列表面板底 */
+  --line: #e6e6e3;
+  --chip-bg: rgba(0, 0, 0, 0.06);
+  --chip-hover: rgba(0, 0, 0, 0.1);
+  --item-hover: rgba(0, 0, 0, 0.05);
+  --muted: rgba(0, 0, 0, 0.45);
+  --shadow: rgba(0, 0, 0, 0.18);
   color-scheme: light;
+}
+
+/* 深色外观：纸面颜色由 main.ts 换成 *Dark 版本，这里只管文字和界面件 */
+:root[data-theme="dark"] {
+  --ink: #ecebe6;
+  --ink-soft: rgba(236, 235, 230, 0.55);
+  --hover: rgba(255, 255, 255, 0.1);
+  --pop: #2c2c2a;
+  --seg: #3a3a38;
+  --seg-on: #5a5a57;
+  --panel: #1f1f1e;
+  --line: #343432;
+  --chip-bg: rgba(255, 255, 255, 0.09);
+  --chip-hover: rgba(255, 255, 255, 0.15);
+  --item-hover: rgba(255, 255, 255, 0.06);
+  --muted: rgba(255, 255, 255, 0.45);
+  --shadow: rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
 /* 颜色预设在 api.ts COLORS，由 main.ts 写进 --paper / --paper-edge */
@@ -78,10 +106,10 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
   max-width: 100%;
   height: 22px;
   border-radius: 11px;
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--chip-bg);
   font-size: 12px;
 }
-.path:hover { background: rgba(0, 0, 0, 0.1); }
+.path:hover { background: var(--chip-hover); }
 .path-name { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px 0 8px; cursor: default; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .path-name svg { width: 13px; height: 13px; flex: none; fill: none; stroke: var(--ink-soft); stroke-width: 1.8; stroke-linejoin: round; }
 /* × 只在悬停时出现 */
@@ -118,8 +146,6 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 .icon-btn svg .dot { fill: var(--paper); }
 
 [data-platform="windows"] .icon-btn { border-radius: 4px; }
-[data-platform="windows"] .icon-btn:hover { background: rgba(0, 0, 0, 0.06); }
-[data-platform="linux"] .icon-btn:hover { background: rgba(0, 0, 0, 0.09); }
 
 .palette {
   position: absolute;
@@ -128,9 +154,9 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
   display: flex;
   gap: 6px;
   padding: 6px 8px;
-  background: #fff;
+  background: var(--pop);
   border-radius: calc(var(--radius) + 2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 16px var(--shadow);
   z-index: 5;
 }
 .palette[hidden] { display: none; }
@@ -147,27 +173,27 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 
 /* 列表 */
 
-.tabs { display: flex; gap: 2px; background: #ececea; padding: 2px; border-radius: calc(var(--radius) + 1px); }
+.tabs { display: flex; gap: 2px; background: var(--seg); padding: 2px; border-radius: calc(var(--radius) + 1px); }
 .tab { border: 0; background: transparent; padding: 2px 10px; border-radius: var(--radius); font-size: 12px; cursor: default; }
-.tab.active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+.tab.active { background: var(--seg-on); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 
 .list-scroll { flex: 1; overflow: auto; }
 .list { list-style: none; margin: 0; padding: 4px; }
 .item { padding: 6px 8px 6px 12px; border-radius: var(--radius); cursor: default; position: relative; }
 .item::before { content: ""; position: absolute; left: 3px; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--c); }
-.item:hover { background: rgba(0, 0, 0, 0.05); }
+.item:hover { background: var(--item-hover); }
 .item-text { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: pre-wrap; word-break: break-word; }
-.item-meta { margin-top: 2px; font-size: 11px; color: rgba(0, 0, 0, 0.45); }
-.empty { padding: 24px; text-align: center; color: rgba(0, 0, 0, 0.4); }
+.item-meta { margin-top: 2px; font-size: 11px; color: var(--muted); }
+.empty { padding: 24px; text-align: center; color: var(--muted); }
 .sentinel { height: 1px; }
 
 /* 颜色/语言弹层 */
 .palette { flex-direction: column; align-items: stretch; }
 .swatches { display: grid; grid-template-columns: repeat(6, 18px); gap: 6px; }
-.swatch.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--ink-soft); }
-.langs { display: flex; gap: 2px; background: #ececea; padding: 2px; border-radius: calc(var(--radius) + 1px); }
-.lang { flex: 1; border: 0; background: transparent; padding: 1px 6px; border-radius: var(--radius); font-size: 11px; cursor: default; }
-.lang.active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+.swatch.active { box-shadow: 0 0 0 2px var(--pop), 0 0 0 3.5px var(--ink-soft); }
+.langs { display: flex; gap: 2px; background: var(--seg); padding: 2px; border-radius: calc(var(--radius) + 1px); }
+.lang, .theme-opt { flex: 1; white-space: nowrap; border: 0; background: transparent; padding: 1px 6px; border-radius: var(--radius); font-size: 11px; cursor: default; }
+.lang.active, .theme-opt.active { background: var(--seg-on); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 
 /* 悬停提示 */
 .tip {
@@ -186,19 +212,21 @@ body.dragging .note { outline: 2px dashed var(--ink-soft); outline-offset: -6px;
 }
 .tip[hidden] { display: none; }
 [data-platform="windows"] .tip { background: #fff; color: #1a1a1a; border: 1px solid #ccc; border-radius: 4px; }
+:root[data-theme="dark"][data-platform="windows"] .tip { background: #2b2b2b; color: #f0f0f0; border-color: #444; }
+:root[data-theme="dark"] .swatch { border-color: rgba(255, 255, 255, 0.2); }
 
 /* ---------- 列表面板窗口 ---------- */
-body.list-window { display: flex; flex-direction: column; background: #fbfbfa; }
+body.list-window { display: flex; flex-direction: column; background: var(--panel); }
 .lw-head { display: flex; align-items: center; gap: 4px; padding: 10px 8px 6px; }
-.search { flex: 1; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; background: #ececea; border-radius: calc(var(--radius) + 1px); }
+.search { flex: 1; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; background: var(--seg); border-radius: calc(var(--radius) + 1px); }
 .search svg { width: 13px; height: 13px; flex: none; fill: none; stroke: var(--ink-soft); stroke-width: 2; stroke-linecap: round; }
 .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: 12px var(--font); color: var(--ink); -webkit-user-select: text; user-select: text; }
 .search input::-webkit-search-cancel-button { display: none; }
 .search:focus-within { box-shadow: 0 0 0 2px rgba(0, 120, 255, 0.35); }
-.lw-filters { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 8px 6px; border-bottom: 1px solid #e6e6e3; }
+.lw-filters { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 8px 6px; border-bottom: 1px solid var(--line); }
 .chips { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px; }
 .chip { width: 12px; height: 12px; padding: 0; border-radius: 50%; border: 1.5px solid; cursor: default; }
-.chip.active { box-shadow: 0 0 0 1.5px #fbfbfa, 0 0 0 3px var(--ink-soft); }
+.chip.active { box-shadow: 0 0 0 1.5px var(--panel), 0 0 0 3px var(--ink-soft); }
 body.list-window .list-scroll { flex: 1; overflow: auto; }
 .lw-foot { height: 20px; display: flex; align-items: center; padding: 0 8px; }
 .open-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #34c759; vertical-align: 1px; }
