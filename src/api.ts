@@ -70,6 +70,7 @@ export const api = {
   syncNow: () => invoke<void>("sync_now"),
   getTrayIcon: () => invoke<string>("get_tray_icon"),
   setTrayIcon: (style: string) => invoke<void>("set_tray_icon", { style }),
+  exportNote: (id: string) => invoke<string>("export_note", { id }),
   current: () => invoke<Note>("get_current_note"),
   get: (id: string) => invoke<Note>("get_note", { id }),
   saveText: (id: string, text: string) => invoke<Note>("save_text", { id, text }),

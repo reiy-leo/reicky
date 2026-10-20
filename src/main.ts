@@ -294,8 +294,26 @@ document.addEventListener("keydown", (e) => {
     newNote();
     return;
   }
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.code === "KeyS") {
+    e.preventDefault();
+    exportNote();
+    return;
+  }
   if (e.key === "Escape") palette.hidden = true;
 });
+
+// ---------- ⌘/Ctrl+S：把这张便签存成 .txt，放到「下载」文件夹 ----------
+async function exportNote() {
+  if (!note) return;
+  if (!editor.value.trim() && note.paths.length === 0) return flash(t.emptyNoExport);
+  try {
+    if (!note.archived && editor.value !== note.text) note = await api.saveText(note.id, editor.value);
+    const path = await api.exportNote(note.id);
+    flash(t.exported(path.split(/[\\/]/).pop() ?? path));
+  } catch (err) {
+    flash(t.exportFailed(err));
+  }
+}
 
 // ---------- 拖入文件 / 文件夹：只记路径 ----------
 getCurrentWebview().onDragDropEvent(async (ev) => {

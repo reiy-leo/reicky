@@ -19,11 +19,13 @@ document.addEventListener(
       ["F3", "F5", "F7", "F11", "F12"].includes(e.key) ||
       (mod && e.altKey && ["KeyI", "KeyJ", "KeyC", "KeyU"].includes(c)) || // 开发者工具 / 控制台 / 检查元素 / 源码
       (mod && e.shiftKey && ["KeyI", "KeyJ", "KeyC", "KeyR", "Delete"].includes(c)) ||
-      (mod && !e.altKey && !e.shiftKey && ["KeyR", "KeyP", "KeyF", "KeyG", "KeyU", "KeyS", "KeyJ", "KeyH"].includes(c)) || // 刷新/打印/查找/源码/保存/下载/历史
+      (mod && !e.altKey && !e.shiftKey && ["KeyR", "KeyP", "KeyF", "KeyG", "KeyU", "KeyJ", "KeyH"].includes(c)) || // 刷新/打印/查找/源码/保存/下载/历史
       (mod && ["Equal", "Minus", "Digit0", "NumpadAdd", "NumpadSubtract"].includes(c)); // 缩放
     if (blocked) {
       e.preventDefault();
       e.stopImmediatePropagation();
+    } else if (mod && !e.altKey && !e.shiftKey && c === "KeyS") {
+      e.preventDefault(); // 挡掉 WebView 默认「保存网页」，便签窗口自己处理成「保存为文件」
     }
   },
   { capture: true },

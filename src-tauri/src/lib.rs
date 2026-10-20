@@ -204,6 +204,47 @@ fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<
     Ok(())
 }
 
+/// ⌘/Ctrl+S：把笔记存成 UTF-8 .txt 放进系统「下载」文件夹，返回完整路径。
+/// 文件名取首个非空行（去掉非法字符，最多 40 字），重名加 (2)(3)…，不覆盖已有文件。
+#[tauri::command]
+fn export_note(app: AppHandle, state: State<AppState>, id: String) -> Res<String> {
+    let n = state.store.lock().unwrap().get(&id)?;
+    let dir = app.path().download_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let mut body = n.text.clone();
+    if !n.paths.is_empty() {
+        if !body.trim().is_empty() {
+            if !body.ends_with('\n') {
+                body.push('\n');
+            }
+            body.push('\n');
+        }
+        body.push_str(&n.paths.join("\n"));
+        body.push('\n');
+    }
+    let stem = export_stem(&n.text);
+    let mut path = dir.join(format!("{stem}.txt"));
+    let mut i = 2;
+    while path.exists() {
+        path = dir.join(format!("{stem} ({i}).txt"));
+        i += 1;
+    }
+    std::fs::write(&path, body).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+fn export_stem(text: &str) -> String {
+    let first = text.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("");
+    let cleaned: String = first
+        .chars()
+        .map(|c| if "/\\:*?\"<>|".contains(c) || c.is_control() { ' ' } else { c })
+        .collect();
+    let cleaned: String = cleaned.split_whitespace().collect::<Vec<_>>().join(" ");
+    let cleaned: String = cleaned.trim_matches('.').chars().take(40).collect();
+    let cleaned = cleaned.trim().to_string();
+    if cleaned.is_empty() { "reicky note".into() } else { cleaned }
+}
+
 /// 在独立小窗口打开某条笔记；已开着就聚焦
 #[tauri::command]
 // 建窗口必须用 async 命令，Windows 上同步命令里建窗口会死锁
@@ -557,6 +598,7 @@ pub fn run() {
             sync_sign_in,
             sync_sign_out,
             sync_now,
+            export_note,
             quit_app
         ])
         .run(tauri::generate_context!())
