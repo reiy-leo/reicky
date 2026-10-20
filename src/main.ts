@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition, PhysicalSize } from "@tauri-apps/api/window";
 import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { hasRenderable, lineEnd, loadRender, onRenderChange, renderText, toggleTodo } from "./render";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
@@ -294,6 +294,16 @@ document.addEventListener("keydown", (e) => {
     newNote();
     return;
   }
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.code === "KeyL") {
+    e.preventDefault();
+    toggleBig();
+    return;
+  }
+  if (bigOn && e.key === "Escape") {
+    e.preventDefault();
+    exitBig();
+    return;
+  }
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.code === "KeyS") {
     e.preventDefault();
     exportNote();
@@ -301,6 +311,88 @@ document.addEventListener("keydown", (e) => {
   }
   if (e.key === "Escape") palette.hidden = true;
 });
+
+// ---------- 全屏大字：⌘/Ctrl+L 或底栏按钮；有选中显示选中，否则整张；Esc / 点击 / 再按一次退出 ----------
+const big = $("big");
+const bigText = $("big-text");
+const isMacUA = document.documentElement.dataset.platform === "mac";
+let bigOn = false;
+let bigRestore: { pos: PhysicalPosition; size: PhysicalSize } | null = null;
+
+function bigContent(): string {
+  const sel = editor.value.slice(editor.selectionStart, editor.selectionEnd);
+  if (document.activeElement === editor && sel.trim()) return sel.trim();
+  return editor.value.trim() || (note?.paths ?? []).map((p) => p.split(/[\\/]/).filter(Boolean).pop() ?? p).join("\n");
+}
+
+// 二分找最大字号：既不超宽也不超高
+function fitBig() {
+  if (!bigOn) return;
+  const maxW = big.clientWidth * 0.92, maxH = big.clientHeight * 0.92;
+  let lo = 12, hi = 1000;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    bigText.style.fontSize = `${mid}px`;
+    if (bigText.scrollWidth <= maxW && bigText.scrollHeight <= maxH) lo = mid;
+    else hi = mid;
+  }
+  bigText.style.fontSize = `${lo}px`;
+}
+
+async function enterBig() {
+  const text = bigContent();
+  if (!text) return flash(t.bigEmpty);
+  hideTip();
+  palette.hidden = true;
+  bigText.textContent = text;
+  big.hidden = false;
+  bigOn = true;
+  try {
+    if (isMacUA) {
+      // mac 的便签窗口是 auxiliary/全空间，进不了原生全屏：直接铺满当前屏幕（窗口本就置顶）
+      const m = await currentMonitor();
+      bigRestore = { pos: await win.outerPosition(), size: await win.outerSize() };
+      if (m) {
+        await win.setPosition(new PhysicalPosition(m.position.x, m.position.y));
+        await win.setSize(new PhysicalSize(m.size.width, m.size.height));
+      }
+    } else {
+      await win.setFullscreen(true);
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+  await win.setFocus().catch(() => {});
+  requestAnimationFrame(fitBig);
+}
+
+async function exitBig() {
+  if (!bigOn) return;
+  bigOn = false;
+  big.hidden = true;
+  try {
+    if (isMacUA) {
+      if (bigRestore) {
+        await win.setSize(bigRestore.size);
+        await win.setPosition(bigRestore.pos);
+      }
+    } else {
+      await win.setFullscreen(false);
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+  bigRestore = null;
+  editor.focus();
+}
+
+function toggleBig() {
+  bigOn ? exitBig() : enterBig();
+}
+$("btn-big").addEventListener("mousedown", (e) => e.preventDefault()); // 保住编辑框里的选区
+$("btn-big").addEventListener("click", () => enterBig());
+big.addEventListener("click", () => exitBig());
+window.addEventListener("resize", () => requestAnimationFrame(fitBig));
 
 // ---------- ⌘/Ctrl+S：把这张便签存成 .txt，放到「下载」文件夹 ----------
 async function exportNote() {

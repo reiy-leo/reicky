@@ -284,3 +284,28 @@ body.list-window .pane:not([hidden]) { flex: 1; min-height: 0; display: flex; fl
 :root[data-theme="dark"] .tray-opt img { filter: invert(1); }
 .tray-opt:hover { background: var(--line); }
 .tray-opt.active { border-color: #3a82f7; box-shadow: 0 0 0 1px #3a82f7; }
+
+/* ---------- 全屏大字 ---------- */
+.big {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 4vw;
+  background: var(--paper);
+  cursor: default;
+}
+.big[hidden] { display: none; }
+.big-text {
+  max-width: 100%;
+  max-height: 100%;
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
