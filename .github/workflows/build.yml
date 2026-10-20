@@ -46,6 +46,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # 从 CHANGELOG.md 取当前版本那一节作为 Release 说明（tag v0.1.1 → "## [0.1.1]"）
+      - name: Release notes
+        id: notes
+        shell: bash
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          body="$(awk -v v="$ver" '/^## \[/{p=index($0,"## ["v"]")==1;next} p' CHANGELOG.md)"
+          [ -n "$body" ] || body="见 CHANGELOG.md"
+          { echo "body<<__NOTES__"; echo "$body"; echo "__NOTES__"; } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,6 +65,7 @@ jobs:
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
           releaseName: reicky ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           args: ${{ matrix.args }}
