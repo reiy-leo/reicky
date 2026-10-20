@@ -4,6 +4,7 @@ import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition, Physic
 import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { hasRenderable, lineEnd, loadRender, onRenderChange, renderText, toggleTodo } from "./render";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { save } from "@tauri-apps/plugin-dialog";
 import { api, colorOf, COLORS, paperOf, type Note } from "./api";
 import { isDark, onThemeChange, setThemeMode, themeMode, type ThemeMode } from "./theme";
 import { broadcastLang, lang, onLangChange, setLang, t, type Lang } from "./i18n";
@@ -394,13 +395,24 @@ $("btn-big").addEventListener("click", () => enterBig());
 big.addEventListener("click", () => exitBig());
 window.addEventListener("resize", () => requestAnimationFrame(fitBig));
 
-// ---------- ⌘/Ctrl+S：把这张便签存成 .txt，放到「下载」文件夹 ----------
+// ---------- ⌘/Ctrl+S：弹系统保存框（默认「下载」/首行.txt），存成文本文件 ----------
 async function exportNote() {
   if (!note) return;
   if (!editor.value.trim() && note.paths.length === 0) return flash(t.emptyNoExport);
   try {
     if (!note.archived && editor.value !== note.text) note = await api.saveText(note.id, editor.value);
-    const path = await api.exportNote(note.id);
+    const id = note.id;
+    const defaultPath = await api.exportDefaultPath(id);
+    // 置顶窗口会把保存框压在下面：弹框期间先取消置顶，结束后恢复
+    if (pinned) await win.setAlwaysOnTop(false).catch(() => {});
+    let path: string | null;
+    try {
+      path = await save({ defaultPath, filters: [{ name: "Text", extensions: ["txt", "md"] }] });
+    } finally {
+      if (pinned) await win.setAlwaysOnTop(true).catch(() => {});
+    }
+    if (!path) return; // 取消
+    await api.exportNote(id, path);
     flash(t.exported(path.split(/[\\/]/).pop() ?? path));
   } catch (err) {
     flash(t.exportFailed(err));

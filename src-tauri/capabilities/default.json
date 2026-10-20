@@ -23,6 +23,7 @@
     "autostart:allow-enable",
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
+    "dialog:allow-save",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
     "opener:allow-reveal-item-in-dir",

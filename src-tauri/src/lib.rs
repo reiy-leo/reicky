@@ -204,13 +204,25 @@ fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<
     Ok(())
 }
 
-/// ⌘/Ctrl+S：把笔记存成 UTF-8 .txt 放进系统「下载」文件夹，返回完整路径。
-/// 文件名取首个非空行（去掉非法字符，最多 40 字），重名加 (2)(3)…，不覆盖已有文件。
+/// ⌘/Ctrl+S 第一步：保存框的默认路径 = 系统「下载」/首个非空行.txt（重名加 (2)(3)…）
 #[tauri::command]
-fn export_note(app: AppHandle, state: State<AppState>, id: String) -> Res<String> {
+fn export_default_path(app: AppHandle, state: State<AppState>, id: String) -> Res<String> {
     let n = state.store.lock().unwrap().get(&id)?;
     let dir = app.path().download_dir().map_err(|e| e.to_string())?;
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let stem = export_stem(&n.text);
+    let mut path = dir.join(format!("{stem}.txt"));
+    let mut i = 2;
+    while path.exists() {
+        path = dir.join(format!("{stem} ({i}).txt"));
+        i += 1;
+    }
+    Ok(path.to_string_lossy().into_owned())
+}
+
+/// ⌘/Ctrl+S 第二步：把笔记写成 UTF-8 文本到用户在保存框里选的路径（拖入的路径附在末尾）
+#[tauri::command]
+fn export_note(state: State<AppState>, id: String, path: String) -> Res<()> {
+    let n = state.store.lock().unwrap().get(&id)?;
     let mut body = n.text.clone();
     if !n.paths.is_empty() {
         if !body.trim().is_empty() {
@@ -222,15 +234,7 @@ fn export_note(app: AppHandle, state: State<AppState>, id: String) -> Res<String
         body.push_str(&n.paths.join("\n"));
         body.push('\n');
     }
-    let stem = export_stem(&n.text);
-    let mut path = dir.join(format!("{stem}.txt"));
-    let mut i = 2;
-    while path.exists() {
-        path = dir.join(format!("{stem} ({i}).txt"));
-        i += 1;
-    }
-    std::fs::write(&path, body).map_err(|e| e.to_string())?;
-    Ok(path.to_string_lossy().into_owned())
+    std::fs::write(&path, body).map_err(|e| e.to_string())
 }
 
 fn export_stem(text: &str) -> String {
@@ -546,6 +550,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
         // 随系统启动：mac 用 LaunchAgent，Windows 注册表 Run，Linux ~/.config/autostart
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .setup(|app| {
@@ -598,6 +603,7 @@ pub fn run() {
             sync_sign_in,
             sync_sign_out,
             sync_now,
+            export_default_path,
             export_note,
             quit_app
         ])
