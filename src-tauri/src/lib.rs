@@ -1,3 +1,4 @@
+mod dbg;
 mod store;
 mod sync;
 
@@ -105,7 +106,11 @@ fn list_notes(
     query: Option<String>,
     color: Option<String>,
 ) -> Res<Page> {
+    let t0 = Instant::now();
     let store = state.store.lock().unwrap();
+    if t0.elapsed() > Duration::from_millis(50) {
+        dlog!("list_notes: 等 store 锁 {:?}", t0.elapsed());
+    }
     let mut page = store.list(offset, limit.min(100), archived, query.as_deref(), color.as_deref());
     let main_visible = app
         .get_webview_window("main")
@@ -415,22 +420,29 @@ fn place_list(app: &AppHandle, anchor: (f64, f64), below: bool) {
         x = x.clamp(l + 8.0, (r - lw - 8.0).max(l));
         y = y.clamp(t + 4.0, (b - lh - 4.0).max(t));
     }
-    let _ = w.set_position(tauri::PhysicalPosition::new(x, y));
-    let _ = w.show();
-    let _ = w.set_focus();
+    let t0 = Instant::now();
+    let r1 = w.set_position(tauri::PhysicalPosition::new(x, y));
+    let r2 = w.show();
+    let r3 = w.set_focus();
     let _ = w.emit("list-shown", ());
+    dlog!("list: 显示 ({x:.0},{y:.0}) pos={:?} show={:?} focus={:?} 用时 {:?}", r1.err(), r2.err(), r3.err(), t0.elapsed());
 }
 
 /// 菜单栏图标左键：列表面板从图标下方弹出（任务栏在底部时从上方弹出）；再点一下收起
 fn toggle_list_at_tray(app: &AppHandle, rect: tauri::Rect) {
-    let Some(w) = app.get_webview_window("list") else { return };
+    let Some(w) = app.get_webview_window("list") else {
+        dlog!("tray: 找不到 list 窗口");
+        return;
+    };
     let just_hidden = app
         .state::<AppState>()
         .list_hidden_at
         .lock()
         .unwrap()
         .map_or(false, |t| t.elapsed() < Duration::from_millis(300));
-    if w.is_visible().unwrap_or(false) {
+    let visible = w.is_visible().unwrap_or(false);
+    dlog!("tray: 点击 visible={visible} just_hidden={just_hidden}");
+    if visible {
         let _ = w.hide();
         return;
     }
@@ -502,6 +514,11 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
         .tooltip("reicky")
         .show_menu_on_left_click(false)
         .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click { button, button_state, .. } = &event {
+                if !(*button == MouseButton::Left && *button_state == MouseButtonState::Up) {
+                    dlog!("tray: 其他点击 {button:?} {button_state:?}");
+                }
+            }
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
@@ -555,6 +572,7 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .setup(|app| {
             let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+            dbg::init(&dir);
             let store = Store::open(dir.clone())?;
             app.manage(AppState { store: Mutex::new(store), data_dir: dir, list_hidden_at: Mutex::new(None), sync: Default::default() });
             sync::start(app.handle());
@@ -577,6 +595,7 @@ pub fn run() {
             // 列表面板像菜单栏弹出面板：点到别处就收起
             WindowEvent::Focused(false) if window.label() == "list" => {
                 if window.is_visible().unwrap_or(false) {
+                    dlog!("list: 失焦收起");
                     let _ = window.hide();
                     *window.app_handle().state::<AppState>().list_hidden_at.lock().unwrap() = Some(Instant::now());
                 }

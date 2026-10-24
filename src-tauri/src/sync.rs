@@ -112,8 +112,33 @@ fn http_err(e: ureq::Error) -> String {
     }
 }
 
+/// 断网/弱网时系统 DNS（getaddrinfo）可能卡很久，ureq 的 timeout 管不到这一步：
+/// 放到单独线程里解析，5 秒拿不到就当网络错误
+fn resolve(addr: &str) -> std::io::Result<Vec<std::net::SocketAddr>> {
+    use std::net::ToSocketAddrs;
+    let (tx, rx) = std::sync::mpsc::channel();
+    let a = addr.to_string();
+    let t0 = Instant::now();
+    std::thread::Builder::new()
+        .name("reicky-dns".into())
+        .spawn(move || {
+            let _ = tx.send(a.to_socket_addrs().map(|i| i.collect::<Vec<_>>()));
+        })?;
+    let r = rx
+        .recv_timeout(Duration::from_secs(5))
+        .unwrap_or_else(|_| Err(std::io::Error::new(std::io::ErrorKind::TimedOut, "DNS 解析超时")));
+    if r.is_err() || t0.elapsed() > Duration::from_secs(1) {
+        crate::dlog!("sync: DNS {addr} 用时 {:?} 结果 {:?}", t0.elapsed(), r.as_ref().err());
+    }
+    r
+}
+
 fn agent() -> ureq::Agent {
-    ureq::AgentBuilder::new().timeout(Duration::from_secs(30)).build()
+    ureq::AgentBuilder::new()
+        .resolver(resolve)
+        .timeout_connect(Duration::from_secs(8))
+        .timeout(Duration::from_secs(30))
+        .build()
 }
 
 #[derive(Deserialize)]
@@ -421,9 +446,15 @@ pub fn run(app: &AppHandle) {
     if client().is_none() || load(&st.data_dir).refresh_token.is_none() {
         return;
     }
-    let Ok(_guard) = st.sync.run.try_lock() else { return };
+    let Ok(_guard) = st.sync.run.try_lock() else {
+        crate::dlog!("sync: 上一轮还在跑，跳过");
+        return;
+    };
+    let t0 = Instant::now();
+    crate::dlog!("sync: 开始");
     st.sync.set(app, true, None);
     let r = sync_once(app);
+    crate::dlog!("sync: 结束 用时 {:?} 结果 {:?}", t0.elapsed(), r.as_ref().err());
     if r.is_err() {
         // access token 可能被吊销了，下次重新换
         *st.sync.access.lock().unwrap() = None;
@@ -435,7 +466,7 @@ pub fn run(app: &AppHandle) {
 /// 启动后台定时同步
 pub fn start(app: &AppHandle) {
     let app = app.clone();
-    std::thread::spawn(move || {
+    let _ = std::thread::Builder::new().name("reicky-sync".into()).spawn(move || {
         std::thread::sleep(Duration::from_secs(5));
         loop {
             run(&app);
