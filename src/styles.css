@@ -82,6 +82,9 @@ button { font: inherit; color: inherit; }
   background: transparent;
   color: var(--ink);
   font: 14px/1.5 var(--font);
+  /* 断行：一行占满再换，不在连字符或单词边界提前折行 */
+  word-break: break-all;
+  line-break: anywhere;
   -webkit-user-select: text;
   user-select: text;
 }
@@ -237,7 +240,7 @@ body.list-window .list-scroll { flex: 1; overflow: auto; }
 .restore { margin-top: 4px; }
 
 /* ---------- 渲染视图（窗口失焦时） ---------- */
-.view:not([hidden]) { display: block; overflow: auto; white-space: pre-wrap; word-break: break-word; cursor: text; -webkit-user-select: text; user-select: text; }
+.view:not([hidden]) { display: block; overflow: auto; white-space: pre-wrap; word-break: break-all; line-break: anywhere; cursor: text; -webkit-user-select: text; user-select: text; }
 .r-line { min-height: 1.5em; }
 .view a { color: #2a6fd6; text-decoration: underline; text-decoration-color: rgba(42, 111, 214, 0.4); text-underline-offset: 2px; cursor: pointer; }
 :root[data-theme="dark"] .view a { color: #7fb1ff; text-decoration-color: rgba(127, 177, 255, 0.4); }
