@@ -97,26 +97,31 @@ function item(it: NoteSummary) {
   }
   row.append(text, time);
   li.append(row);
+  li.dataset.id = it.id;
+  const open = () => {
+    const run = it.main ? api.showMain() : api.openWindow(it.id);
+    run.catch((err) => flash(t.openFailed(err)));
+  };
   if (it.archived) {
+    // 已归档：双击只读打开；行尾「恢复」→ 切回便签页并定位到它
+    li.addEventListener("dblclick", open);
     const r = document.createElement("button");
-    r.className = "lang restore";
+    r.className = "restore";
     r.textContent = t.unarchive;
+    r.addEventListener("dblclick", (e) => e.stopPropagation());
     r.addEventListener("click", async (e) => {
       e.stopPropagation();
       try {
         await api.unarchive(it.id);
-        li.remove();
         flash(t.restored);
+        reveal(it.id);
       } catch (err) {
         flash(t.saveFailed(err));
       }
     });
-    li.append(r);
+    row.append(r);
   } else {
-    li.addEventListener("click", () => {
-      const run = it.main ? api.showMain() : api.openWindow(it.id);
-      run.catch((err) => flash(t.openFailed(err)));
-    });
+    li.addEventListener("click", open);
   }
   return li;
 }
@@ -131,6 +136,7 @@ async function loadMore() {
     offset += page.items.length;
     hasMore = page.hasMore;
     listEl.append(...page.items.map(item));
+    if (focusId && highlight(focusId)) focusId = undefined;
     if (!hasMore && listEl.childElementCount === 0) {
       const li = document.createElement("li");
       li.className = "empty";
@@ -143,8 +149,35 @@ async function loadMore() {
     loading = false;
   }
   if (my !== gen) return loadMore();
-  // 一页没填满可视区时继续加载
-  if (hasMore && sentinel.getBoundingClientRect().top < window.innerHeight) loadMore();
+  // 一页没填满可视区时继续加载；要定位的条目还没出现也继续翻页
+  if (hasMore && (focusId || sentinel.getBoundingClientRect().top < window.innerHeight)) loadMore();
+  else if (!hasMore) focusId = undefined;
+}
+
+// 恢复后要滚到并高亮的条目
+let focusId: string | undefined;
+
+function highlight(id: string) {
+  const li = listEl.querySelector<HTMLElement>(`li[data-id="${CSS.escape(id)}"]`);
+  if (!li) return false;
+  li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  li.classList.remove("flash");
+  void li.offsetWidth; // 重新触发动画
+  li.classList.add("flash");
+  li.addEventListener("animationend", () => li.classList.remove("flash"), { once: true });
+  return true;
+}
+
+/** 切到「便签」页并定位到 id（清掉搜索和颜色筛选，免得它被筛掉） */
+function reveal(id: string) {
+  showArchived = false;
+  q.value = "";
+  if (color) {
+    color = undefined;
+    renderChips();
+  }
+  focusId = id;
+  resetList();
 }
 
 function resetList() {

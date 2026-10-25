@@ -237,7 +237,19 @@ body.list-window { display: flex; flex-direction: column; background: var(--pane
 body.list-window .list-scroll { flex: 1; overflow: auto; }
 .lw-foot { height: 20px; display: flex; align-items: center; padding: 0 8px; }
 .open-dot { flex: none; display: inline-block; width: 6px; height: 6px; margin-right: -3px; border-radius: 50%; background: #34c759; vertical-align: 1px; }
-.restore { margin-top: 4px; }
+.restore { flex: none; border: 0; background: transparent; padding: 0; font: inherit; font-size: 11px; color: var(--ink-soft); cursor: default; }
+.restore:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+/* 恢复后定位到的条目闪一下 */
+.item.flash { animation: item-flash 1.2s ease-out; }
+@keyframes item-flash {
+  0%, 30% { box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.12), 0 0 0 2px var(--ink-soft); }
+  100% { box-shadow: inset 0 0 0 999px transparent, 0 0 0 2px transparent; }
+}
+:root[data-theme="dark"] .item.flash { animation-name: item-flash-dark; }
+@keyframes item-flash-dark {
+  0%, 30% { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.14), 0 0 0 2px var(--ink-soft); }
+  100% { box-shadow: inset 0 0 0 999px transparent, 0 0 0 2px transparent; }
+}
 
 /* ---------- 渲染视图（窗口失焦时） ---------- */
 .view:not([hidden]) { display: block; overflow: auto; white-space: pre-wrap; word-break: break-all; line-break: anywhere; cursor: text; -webkit-user-select: text; user-select: text; }
