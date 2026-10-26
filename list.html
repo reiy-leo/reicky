@@ -43,10 +43,25 @@
         <div class="set-group">
           <div class="set-label" data-i18n="syncSection"></div>
           <label class="set-row"><span data-i18n="syncGoogle"></span><input id="sync-google" type="checkbox" class="switch" /></label>
+          <label class="set-row"><span data-i18n="syncDav"></span><input id="sync-dav" type="checkbox" class="switch" /></label>
+          <form id="dav-form" class="dav-form" hidden autocomplete="off">
+            <input id="dav-url" type="text" spellcheck="false" data-i18n-placeholder="davUrl" required />
+            <input id="dav-user" type="text" spellcheck="false" data-i18n-placeholder="davUser" />
+            <input id="dav-pass" type="password" data-i18n-placeholder="davPass" />
+            <div class="dav-actions">
+              <button type="button" id="dav-cancel" class="link-btn" data-i18n="cancel"></button>
+              <button type="submit" id="dav-save" class="dav-save" data-i18n="davConnect"></button>
+            </div>
+          </form>
           <div class="sync-info">
             <span id="sync-text" class="sync-text"></span>
             <button id="sync-now" class="link-btn" data-i18n="syncNow" hidden></button>
           </div>
+          <button id="ydiyr" class="ydiyr" type="button">
+            <svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></svg>
+            <span class="ydiyr-text"><b data-i18n="ydiyrTitle"></b><span data-i18n="ydiyrBody"></span></span>
+            <svg class="ydiyr-go" viewBox="0 0 24 24"><path d="M7 7h10v10" /><path d="M7 17 17 7" /></svg>
+          </button>
         </div>
         <div class="set-group">
           <div class="set-label" data-i18n="trayIcon"></div>

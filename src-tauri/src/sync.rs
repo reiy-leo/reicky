@@ -1,4 +1,6 @@
-//! Google Drive 同步：笔记存到用户 Drive 的 appDataFolder（应用私有、用户网盘里看不见），
+//! 同步：支持 Google Drive 和 WebDAV（见 dav.rs），两者二选一。合并逻辑两边共用（sync_once）。
+//!
+//! Google Drive：笔记存到用户 Drive 的 appDataFolder（应用私有、用户网盘里看不见），
 //! 每条笔记一个 `reicky-<id>.json`，appProperties.app=reicky 标记归属（appDataFolder 按 GCP 项目共享，可能和 navill 同一个），appProperties.modified 记修改时间。笔记不删除，所以合并就是
 //! 按 modified 取新：本地新就上传，远端新就下载。
 //!
@@ -28,7 +30,7 @@ const UPLOAD: &str = "https://www.googleapis.com/upload/drive/v3/files";
 /// 自动同步间隔
 const EVERY: Duration = Duration::from_secs(120);
 
-type Res<T> = Result<T, String>;
+pub(crate) type Res<T> = Result<T, String>;
 
 fn client() -> Option<(String, String)> {
     let id = std::env::var("REICKY_GOOGLE_CLIENT_ID").ok().or(option_env!("REICKY_GOOGLE_CLIENT_ID").map(String::from))?;
@@ -62,6 +64,8 @@ pub struct Status {
     pub configured: bool,
     pub signed_in: bool,
     pub email: Option<String>,
+    /// 用 WebDAV 同步时的账号（`用户名@主机`）
+    pub dav: Option<String>,
     pub last_sync: Option<u64>,
     pub busy: bool,
     pub error: Option<String>,
@@ -85,18 +89,22 @@ fn code_text(code: u16) -> String {
         401 => "未授权",
         403 => "没有权限",
         404 => "找不到",
+        405 => "方法不允许",
+        409 => "冲突",
+        423 => "资源被锁定",
         408 => "请求超时",
         429 => "请求太频繁",
         500 => "服务器内部错误",
         502 => "网关错误",
         503 => "服务不可用",
         504 => "网关超时",
+        507 => "存储空间不足",
         _ => "请求失败",
     };
     format!("{code} {zh}")
 }
 
-fn http_err(e: ureq::Error) -> String {
+pub(crate) fn http_err(e: ureq::Error) -> String {
     match e {
         ureq::Error::Status(code, r) => {
             let body = r.into_string().unwrap_or_default();
@@ -133,7 +141,7 @@ fn resolve(addr: &str) -> std::io::Result<Vec<std::net::SocketAddr>> {
     r
 }
 
-fn agent() -> ureq::Agent {
+pub(crate) fn agent() -> ureq::Agent {
     ureq::AgentBuilder::new()
         .resolver(resolve)
         .timeout_connect(Duration::from_secs(8))
@@ -151,12 +159,15 @@ struct Token {
 impl Sync {
     pub fn status(&self, dir: &Path) -> Status {
         let s = load(dir);
+        let d = crate::dav::load(dir);
         let st = self.status.lock().unwrap();
+        let signed_in = s.refresh_token.is_some();
         Status {
             configured: client().is_some(),
-            signed_in: s.refresh_token.is_some(),
+            signed_in,
             email: s.email,
-            last_sync: s.last_sync,
+            dav: d.as_ref().map(crate::dav::label),
+            last_sync: if signed_in { s.last_sync } else { d.and_then(|d| d.last_sync) },
             busy: st.busy,
             error: st.error.clone(),
         }
@@ -291,6 +302,8 @@ pub fn sign_in(app: &AppHandle) -> Res<()> {
     let until = Instant::now() + Duration::from_secs(tok.expires_in.unwrap_or(3600).saturating_sub(120));
     *st.sync.access.lock().unwrap() = Some((tok.access_token, until));
     save(&st.data_dir, &Saved { refresh_token: Some(rt), email, last_sync: None })?;
+    // 两种同步二选一：登录 Google 就关掉 WebDAV
+    crate::dav::remove(&st.data_dir);
     Ok(())
 }
 
@@ -309,6 +322,24 @@ pub fn sign_out(app: &AppHandle) -> Res<()> {
 
 // ---------- 同步 ----------
 
+/// 远端的一条笔记
+pub(crate) struct Entry {
+    pub id: String,
+    pub modified: u64,
+    /// Google：文件 ID；WebDAV：文件名
+    pub key: String,
+    /// WebDAV 残留的旧版本文件名
+    pub stale: Vec<String>,
+}
+
+/// 远端存储：Google Drive 或 WebDAV
+pub(crate) trait Remote {
+    fn list(&mut self) -> Res<Vec<Entry>>;
+    /// 上传笔记；prev 是远端已有的那份
+    fn put(&mut self, note: &Note, prev: Option<&Entry>) -> Res<()>;
+    fn get(&mut self, e: &Entry) -> Res<Note>;
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RemoteFile {
@@ -326,105 +357,126 @@ struct FileList {
     next_page_token: Option<String>,
 }
 
-fn list_remote(token: &str) -> Res<Vec<RemoteFile>> {
-    let mut out = vec![];
-    let mut page: Option<String> = None;
-    loop {
-        let mut req = agent()
-            .get(DRIVE)
-            .set("Authorization", &format!("Bearer {token}"))
-            .query("spaces", "appDataFolder")
-            // appDataFolder 按 GCP 项目共享（和 navill 同项目），只看 reicky 自己的文件
-            .query("q", "appProperties has { key='app' and value='reicky' } and trashed = false")
-            .query("pageSize", "1000")
-            .query("fields", "nextPageToken,files(id,name,appProperties)");
-        if let Some(p) = &page {
-            req = req.query("pageToken", p);
+struct Drive {
+    token: String,
+}
+
+impl Remote for Drive {
+    fn list(&mut self) -> Res<Vec<Entry>> {
+        let mut out = vec![];
+        let mut page: Option<String> = None;
+        loop {
+            let mut req = agent()
+                .get(DRIVE)
+                .set("Authorization", &format!("Bearer {}", self.token))
+                .query("spaces", "appDataFolder")
+                // appDataFolder 按 GCP 项目共享（和 navill 同项目），只看 reicky 自己的文件
+                .query("q", "appProperties has { key='app' and value='reicky' } and trashed = false")
+                .query("pageSize", "1000")
+                .query("fields", "nextPageToken,files(id,name,appProperties)");
+            if let Some(p) = &page {
+                req = req.query("pageToken", p);
+            }
+            let l: FileList = req.call().map_err(http_err)?.into_json().map_err(|e| e.to_string())?;
+            for f in l.files {
+                if let Some(id) = f.name.strip_prefix("reicky-").and_then(|n| n.strip_suffix(".json")) {
+                    let modified = f.app_properties.get("modified").and_then(|m| m.parse::<u64>().ok()).unwrap_or(0);
+                    out.push(Entry { id: id.to_string(), modified, key: f.id, stale: vec![] });
+                }
+            }
+            match l.next_page_token {
+                Some(p) => page = Some(p),
+                None => return Ok(out),
+            }
         }
-        let l: FileList = req.call().map_err(http_err)?.into_json().map_err(|e| e.to_string())?;
-        out.extend(l.files);
-        match l.next_page_token {
-            Some(p) => page = Some(p),
-            None => return Ok(out),
+    }
+
+    fn put(&mut self, note: &Note, prev: Option<&Entry>) -> Res<()> {
+        let boundary = format!("reicky-{}", uuid::Uuid::new_v4().simple());
+        let mut meta = serde_json::json!({ "appProperties": { "app": "reicky", "modified": note.modified.to_string() } });
+        if prev.is_none() {
+            meta["name"] = format!("reicky-{}.json", note.id).into();
+            meta["parents"] = serde_json::json!(["appDataFolder"]);
         }
+        let body = format!(
+            "--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{meta}\r\n--{boundary}\r\nContent-Type: application/json\r\n\r\n{}\r\n--{boundary}--",
+            serde_json::to_string(note).map_err(|e| e.to_string())?
+        );
+        let req = match prev {
+            Some(p) => agent().request("PATCH", &format!("{UPLOAD}/{}", p.key)),
+            None => agent().post(UPLOAD),
+        };
+        req.query("uploadType", "multipart")
+            .set("Authorization", &format!("Bearer {}", self.token))
+            .set("Content-Type", &format!("multipart/related; boundary={boundary}"))
+            .send_string(&body)
+            .map_err(http_err)?;
+        Ok(())
+    }
+
+    fn get(&mut self, e: &Entry) -> Res<Note> {
+        agent()
+            .get(&format!("{DRIVE}/{}", e.key))
+            .query("alt", "media")
+            .set("Authorization", &format!("Bearer {}", self.token))
+            .call()
+            .map_err(http_err)?
+            .into_json()
+            .map_err(|e| e.to_string())
     }
 }
 
-fn upload(token: &str, note: &Note, existing: Option<&str>) -> Res<()> {
-    let boundary = format!("reicky-{}", uuid::Uuid::new_v4().simple());
-    let mut meta = serde_json::json!({ "appProperties": { "app": "reicky", "modified": note.modified.to_string() } });
-    if existing.is_none() {
-        meta["name"] = format!("reicky-{}.json", note.id).into();
-        meta["parents"] = serde_json::json!(["appDataFolder"]);
-    }
-    let body = format!(
-        "--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{meta}\r\n--{boundary}\r\nContent-Type: application/json\r\n\r\n{}\r\n--{boundary}--",
-        serde_json::to_string(note).map_err(|e| e.to_string())?
-    );
-    let req = match existing {
-        Some(id) => agent().request("PATCH", &format!("{UPLOAD}/{id}")),
-        None => agent().post(UPLOAD),
-    };
-    req.query("uploadType", "multipart")
-        .set("Authorization", &format!("Bearer {token}"))
-        .set("Content-Type", &format!("multipart/related; boundary={boundary}"))
-        .send_string(&body)
-        .map_err(http_err)?;
-    Ok(())
-}
-
-fn download(token: &str, file_id: &str) -> Res<Note> {
-    agent()
-        .get(&format!("{DRIVE}/{file_id}"))
-        .query("alt", "media")
-        .set("Authorization", &format!("Bearer {token}"))
-        .call()
-        .map_err(http_err)?
-        .into_json()
-        .map_err(|e| e.to_string())
-}
-
-fn sync_once(app: &AppHandle) -> Res<()> {
+/// 合并：笔记不删除，所以按修改时间取新——本地新就上传，远端新就下载
+fn merge(app: &AppHandle, remote: &mut dyn Remote) -> Res<()> {
     let st = app.state::<AppState>();
-    let token = st.sync.access_token(&st.data_dir)?;
-    let remote = list_remote(&token)?;
+    let entries = remote.list()?;
     let local: HashMap<String, Note> = st.store.lock().unwrap().all().into_iter().map(|n| (n.id.clone(), n)).collect();
-    let mut by_id: HashMap<String, &RemoteFile> = HashMap::new();
-    for f in &remote {
-        if let Some(id) = f.name.strip_prefix("reicky-").and_then(|n| n.strip_suffix(".json")) {
-            by_id.insert(id.to_string(), f);
-        }
-    }
+    let by_id: HashMap<String, &Entry> = entries.iter().map(|e| (e.id.clone(), e)).collect();
     // 本地有：比修改时间
     for (id, n) in &local {
         // 空白笔记不上传（主便签新建时就是空的）
         let blank = n.text.trim().is_empty() && n.paths.is_empty();
-        match by_id.get(id) {
+        match by_id.get(id).copied() {
             None if blank => {}
-            None => upload(&token, n, None)?,
-            Some(f) => {
-                let rm = f.app_properties.get("modified").and_then(|m| m.parse::<u64>().ok()).unwrap_or(0);
-                if n.modified > rm {
-                    upload(&token, n, Some(&f.id))?;
-                } else if rm > n.modified {
-                    pull(app, &token, &f.id)?;
-                }
-            }
+            None => remote.put(n, None)?,
+            Some(e) if n.modified > e.modified => remote.put(n, Some(e))?,
+            Some(e) if e.modified > n.modified => pull(app, remote, e)?,
+            Some(_) => {}
         }
     }
     // 只在远端有：下载
-    for (id, f) in &by_id {
+    for (id, e) in &by_id {
         if !local.contains_key(id) {
-            pull(app, &token, &f.id)?;
+            pull(app, remote, e)?;
         }
     }
-    let mut s = load(&st.data_dir);
-    s.last_sync = Some(now_ms());
-    save(&st.data_dir, &s)
+    Ok(())
 }
 
-fn pull(app: &AppHandle, token: &str, file_id: &str) -> Res<()> {
-    let n = download(token, file_id)?;
+fn sync_once(app: &AppHandle) -> Res<()> {
+    let st = app.state::<AppState>();
+    let dir = &st.data_dir;
+    if load(dir).refresh_token.is_some() {
+        let token = st.sync.access_token(dir)?;
+        merge(app, &mut Drive { token })?;
+        let mut s = load(dir);
+        s.last_sync = Some(now_ms());
+        save(dir, &s)
+    } else if let Some(d) = crate::dav::load(dir) {
+        merge(app, &mut crate::dav::Dav::new(&d)?)?;
+        // 重新读一次：同步期间可能刚改过配置
+        if let Some(mut d) = crate::dav::load(dir) {
+            d.last_sync = Some(now_ms());
+            crate::dav::save(dir, &d)?;
+        }
+        Ok(())
+    } else {
+        Ok(())
+    }
+}
+
+fn pull(app: &AppHandle, remote: &mut dyn Remote, e: &Entry) -> Res<()> {
+    let n = remote.get(e)?;
     let st = app.state::<AppState>();
     {
         let store = st.store.lock().unwrap();
@@ -440,10 +492,14 @@ fn pull(app: &AppHandle, token: &str, file_id: &str) -> Res<()> {
     Ok(())
 }
 
+fn enabled(dir: &Path) -> bool {
+    (client().is_some() && load(dir).refresh_token.is_some()) || crate::dav::load(dir).is_some()
+}
+
 /// 跑一次同步（已在跑就跳过），结果通过 sync-status 事件告诉前端
 pub fn run(app: &AppHandle) {
     let st = app.state::<AppState>();
-    if client().is_none() || load(&st.data_dir).refresh_token.is_none() {
+    if !enabled(&st.data_dir) {
         return;
     }
     let Ok(_guard) = st.sync.run.try_lock() else {
@@ -461,6 +517,35 @@ pub fn run(app: &AppHandle) {
     }
     st.sync.set(app, false, r.err());
     let _ = app.emit("notes-synced", ());
+}
+
+/// 连上 WebDAV：先检查账号、建目录，通过才保存；会退出 Google
+pub fn dav_connect(app: &AppHandle, url: &str, user: &str, password: &str) -> Res<()> {
+    let saved = crate::dav::Saved {
+        url: crate::dav::normalize(url)?,
+        user: user.trim().to_string(),
+        password: password.to_string(),
+        last_sync: None,
+    };
+    crate::dav::Dav::new(&saved)?.check()?;
+    let st = app.state::<AppState>();
+    if load(&st.data_dir).refresh_token.is_some() {
+        sign_out(app)?;
+    }
+    let _guard = st.sync.run.lock().unwrap();
+    crate::dav::save(&st.data_dir, &saved)?;
+    drop(_guard);
+    st.sync.set(app, false, None);
+    Ok(())
+}
+
+pub fn dav_disconnect(app: &AppHandle) -> Res<()> {
+    let st = app.state::<AppState>();
+    let _guard = st.sync.run.lock().unwrap();
+    crate::dav::remove(&st.data_dir);
+    drop(_guard);
+    st.sync.set(app, false, None);
+    Ok(())
 }
 
 /// 启动后台定时同步

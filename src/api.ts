@@ -28,6 +28,8 @@ export interface SyncStatus {
   configured: boolean;
   signedIn: boolean;
   email: string | null;
+  /** 用 WebDAV 同步时的账号（用户名@主机） */
+  dav: string | null;
   lastSync: number | null;
   busy: boolean;
   error: string | null;
@@ -68,6 +70,8 @@ export const api = {
   syncSignIn: () => invoke<SyncStatus>("sync_sign_in"),
   syncSignOut: () => invoke<void>("sync_sign_out"),
   syncNow: () => invoke<void>("sync_now"),
+  davConnect: (url: string, user: string, password: string) => invoke<SyncStatus>("sync_dav_connect", { url, user, password }),
+  davDisconnect: () => invoke<void>("sync_dav_disconnect"),
   getTrayIcon: () => invoke<string>("get_tray_icon"),
   setTrayIcon: (style: string) => invoke<void>("set_tray_icon", { style }),
   exportDefaultPath: (id: string) => invoke<string>("export_default_path", { id }),

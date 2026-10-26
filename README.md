@@ -7,7 +7,7 @@
 - 笔记只能归档，不能删除
 - 底部按钮：颜色/语言、变换形状（瘦高 / 宽扁 / 正方形）、归档、笔记列表
 - 界面中文 / English，默认跟随系统
-- 存储：本机 JSON；之后加 Google Drive appDataFolder、WebDAV 同步
+- 存储：本机 JSON；可选同步到 Google Drive appDataFolder 或你自己的 WebDAV（二选一，见 docs/WEBDAV_SYNC.md）
 
 ## 开发
 

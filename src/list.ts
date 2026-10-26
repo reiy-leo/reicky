@@ -2,6 +2,7 @@
 import { listen } from "@tauri-apps/api/event";
 import { disable as autostartOff, enable as autostartOn, isEnabled as autostartIsOn } from "@tauri-apps/plugin-autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { api, COLORS, paperOf, type Color, type NoteSummary, type SyncStatus } from "./api";
 import { isDark, onThemeChange } from "./theme";
 import { loadRender, onRenderChange, saveRender, type RenderOpts } from "./render";
@@ -309,32 +310,46 @@ autostart.addEventListener("change", async () => {
 });
 syncAutostart();
 
-// ---------- Google 同步 ----------
+// ---------- 同步（Google / WebDAV 二选一） ----------
 const syncSwitch = $<HTMLInputElement>("sync-google");
+const davSwitch = $<HTMLInputElement>("sync-dav");
+const davForm = $<HTMLFormElement>("dav-form");
+const davUrl = $<HTMLInputElement>("dav-url");
+const davUser = $<HTMLInputElement>("dav-user");
+const davPass = $<HTMLInputElement>("dav-pass");
+const davSave = $<HTMLButtonElement>("dav-save");
 const syncText = $("sync-text");
 const syncNowBtn = $<HTMLButtonElement>("sync-now");
 let signingIn = false;
+let davChecking = false;
 let syncSt: SyncStatus | null = null;
 function renderSync(st = syncSt) {
   if (!st) return;
   syncSt = st;
-  syncSwitch.disabled = !st.configured || signingIn;
+  const on = st.signedIn || !!st.dav;
+  const who = st.signedIn ? (st.email ?? "Google") : (st.dav ?? "WebDAV");
+  syncSwitch.disabled = !st.configured || signingIn || davChecking;
   syncSwitch.checked = st.signedIn || signingIn;
-  syncNowBtn.hidden = !st.signedIn || st.busy;
+  davSwitch.disabled = signingIn || davChecking;
+  davSwitch.checked = !!st.dav || !davForm.hidden;
+  davSave.disabled = davChecking;
+  syncNowBtn.hidden = !on || st.busy;
   syncText.classList.toggle("err", !!st.error);
-  syncText.textContent = !st.configured
-    ? t.syncNotConfigured
-    : signingIn
-      ? t.syncWaiting
+  syncText.textContent = signingIn
+    ? t.syncWaiting
+    : davChecking
+      ? t.davChecking
       : st.error
         ? t.syncFailed(st.error)
         : st.busy
           ? t.syncBusy
-          : st.signedIn
+          : on
             ? st.lastSync
-              ? t.syncLast(st.email ?? "Google", new Date(st.lastSync).toLocaleString(lang === "zh" ? "zh-CN" : "en-US"))
-              : t.syncNever(st.email ?? "Google")
-            : t.syncOff;
+              ? t.syncLast(who, new Date(st.lastSync).toLocaleString(lang === "zh" ? "zh-CN" : "en-US"))
+              : t.syncNever(who)
+            : st.configured
+              ? t.syncOff
+              : t.syncNotConfigured;
 }
 async function refreshSync() {
   try {
@@ -343,6 +358,7 @@ async function refreshSync() {
 }
 syncSwitch.addEventListener("change", async () => {
   if (syncSwitch.checked) {
+    davForm.hidden = true;
     signingIn = true;
     renderSync();
     try {
@@ -358,7 +374,44 @@ syncSwitch.addEventListener("change", async () => {
     refreshSync();
   }
 });
+davSwitch.addEventListener("change", async () => {
+  if (davSwitch.checked) {
+    // 先填表，连上了才算开
+    davForm.hidden = false;
+    renderSync();
+    davUrl.focus();
+  } else if (!davForm.hidden && !syncSt?.dav) {
+    davForm.hidden = true;
+    renderSync();
+  } else {
+    davForm.hidden = true;
+    await api.davDisconnect().catch(() => {});
+    refreshSync();
+  }
+});
+$("dav-cancel").addEventListener("click", () => {
+  davForm.hidden = true;
+  renderSync();
+});
+davForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  davChecking = true;
+  renderSync();
+  try {
+    const st = await api.davConnect(davUrl.value, davUser.value, davPass.value);
+    davChecking = false;
+    davForm.hidden = true;
+    davPass.value = "";
+    renderSync(st);
+  } catch (err) {
+    davChecking = false;
+    renderSync({ ...(syncSt as SyncStatus), error: String(err) });
+  }
+});
 syncNowBtn.addEventListener("click", () => api.syncNow());
+$("ydiyr").addEventListener("click", () => {
+  openUrl("https://your-data-is-your-responsibility.rei8t.dev").catch(() => {});
+});
 listen<SyncStatus>("sync-status", (e) => renderSync(e.payload));
 // 同步下载了笔记：列表开着就刷新
 listen("notes-synced", () => {

@@ -1,5 +1,6 @@
 mod dbg;
 mod store;
+mod dav;
 mod sync;
 
 use std::sync::Mutex;
@@ -365,7 +366,7 @@ fn set_tray_icon(app: AppHandle, state: State<AppState>, style: String) -> Res<(
     Ok(())
 }
 
-// ---------- Google 同步 ----------
+// ---------- 同步（Google / WebDAV） ----------
 
 #[tauri::command]
 fn sync_status(state: State<AppState>) -> sync::Status {
@@ -390,6 +391,26 @@ async fn sync_sign_in(app: AppHandle) -> Res<sync::Status> {
 #[tauri::command]
 async fn sync_sign_out(app: AppHandle) -> Res<()> {
     tauri::async_runtime::spawn_blocking(move || sync::sign_out(&app)).await.map_err(|e| e.to_string())?
+}
+
+/// 连上 WebDAV（检查通过才保存），成功后立刻同步一次
+#[tauri::command]
+async fn sync_dav_connect(app: AppHandle, url: String, user: String, password: String) -> Res<sync::Status> {
+    let a = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sync::dav_connect(&a, &url, &user, &password)?;
+        sync::run(&a);
+        Ok::<_, String>(())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    let st = app.state::<AppState>();
+    Ok(st.sync.status(&st.data_dir))
+}
+
+#[tauri::command]
+async fn sync_dav_disconnect(app: AppHandle) -> Res<()> {
+    tauri::async_runtime::spawn_blocking(move || sync::dav_disconnect(&app)).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -622,6 +643,8 @@ pub fn run() {
             sync_sign_in,
             sync_sign_out,
             sync_now,
+            sync_dav_connect,
+            sync_dav_disconnect,
             export_default_path,
             export_note,
             quit_app
