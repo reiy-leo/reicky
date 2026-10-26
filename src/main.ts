@@ -69,7 +69,12 @@ function renderPaths() {
       rm.textContent = "×";
       rm.dataset.tip = t.pathRemove;
       rm.setAttribute("aria-label", t.pathRemove);
-      rm.addEventListener("click", () => api.removePath(n.id, p).then(setNote).catch((err) => flash(t.saveFailed(err))));
+      rm.addEventListener("click", () =>
+        api
+          .removePath(n.id, p)
+          .then(setNote)
+          .catch((err) => flash(t.saveFailed(err))),
+      );
       li.append(name, rm);
       return li;
     }),
@@ -83,7 +88,9 @@ function setNote(n: Note, force = false) {
   const root = document.documentElement.style;
   root.setProperty("--paper", pe.paper);
   root.setProperty("--paper-edge", pe.edge);
-  swatches.querySelectorAll<HTMLElement>(".swatch").forEach((b) => b.classList.toggle("active", b.dataset.swatch === c.id));
+  swatches.querySelectorAll<HTMLElement>(".swatch").forEach((b) => {
+    b.classList.toggle("active", b.dataset.swatch === c.id);
+  });
   if (force || document.activeElement !== editor || viewing) {
     if (editor.value !== n.text) editor.value = n.text;
   }
@@ -122,9 +129,12 @@ function flushSave() {
   clearTimeout(saveTimer);
   saveTimer = undefined;
   const id = note.id;
-  api.saveText(id, editor.value).then((n) => {
-    if (note?.id === id) note = { ...n, text: editor.value };
-  }).catch((err) => flash(t.saveFailed(err)));
+  api
+    .saveText(id, editor.value)
+    .then((n) => {
+      if (note?.id === id) note = { ...n, text: editor.value };
+    })
+    .catch((err) => flash(t.saveFailed(err)));
 }
 editor.addEventListener("input", () => {
   clearTimeout(saveTimer);
@@ -143,11 +153,13 @@ document.addEventListener("click", (e) => {
 });
 // ---------- 外观 ----------
 function renderThemeOpts() {
-  document.querySelectorAll<HTMLElement>(".theme-opt").forEach((b) => b.classList.toggle("active", b.dataset.themeMode === themeMode));
+  document.querySelectorAll<HTMLElement>(".theme-opt").forEach((b) => {
+    b.classList.toggle("active", b.dataset.themeMode === themeMode);
+  });
 }
-document.querySelectorAll<HTMLButtonElement>(".theme-opt").forEach((b) =>
-  b.addEventListener("click", () => setThemeMode(b.dataset.themeMode as ThemeMode)),
-);
+document.querySelectorAll<HTMLButtonElement>(".theme-opt").forEach((b) => {
+  b.addEventListener("click", () => setThemeMode(b.dataset.themeMode as ThemeMode));
+});
 onThemeChange(() => {
   renderThemeOpts();
   renderSwatches();
@@ -321,8 +333,10 @@ function bigContent(): string {
 // 二分找最大字号：既不超宽也不超高
 function fitBig() {
   if (!bigOn) return;
-  const maxW = big.clientWidth * 0.92, maxH = big.clientHeight * 0.92;
-  let lo = 12, hi = 1000;
+  const maxW = big.clientWidth * 0.92,
+    maxH = big.clientHeight * 0.92;
+  let lo = 12,
+    hi = 1000;
   while (hi - lo > 1) {
     const mid = (lo + hi) >> 1;
     bigText.style.fontSize = `${mid}px`;
@@ -466,7 +480,7 @@ win.onFocusChanged(({ payload: focused }) => {
 view.addEventListener("click", (e) => {
   const el = e.target as HTMLElement;
   const a = el.closest<HTMLElement>("a[data-href]");
-  if (a) return void openUrl(a.dataset.href!).catch((err) => flash(t.openFailed(err)));
+  if (a?.dataset.href) return void openUrl(a.dataset.href).catch((err) => flash(t.openFailed(err)));
   const box = el.closest<HTMLElement>("[data-check]");
   if (box) {
     if (!note || note.archived) return flash(t.readonlyArchived);
@@ -480,10 +494,14 @@ view.addEventListener("click", (e) => {
   showEdit(row ? Number(row.dataset.line) : editor.value.split("\n").length - 1);
 });
 // 渲染状态下直接打字：切回编辑，光标放到末尾
-document.addEventListener("keydown", (e) => {
-  if (!viewing || e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1 && e.key !== "Enter") return;
-  showEdit(editor.value.split("\n").length - 1);
-}, true);
+document.addEventListener(
+  "keydown",
+  (e) => {
+    if (!viewing || e.metaKey || e.ctrlKey || e.altKey || (e.key.length !== 1 && e.key !== "Enter")) return;
+    showEdit(editor.value.split("\n").length - 1);
+  },
+  true,
+);
 onRenderChange((o) => {
   renderOpts = o;
   if (viewing || !document.hasFocus()) showView();

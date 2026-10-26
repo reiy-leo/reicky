@@ -2,7 +2,8 @@ import type { Dict } from "./en";
 
 // 1 путь, 2 пути, 5 путей
 function plural(n: number, one: string, few: string, many: string) {
-  const a = n % 10, b = n % 100;
+  const a = n % 10,
+    b = n % 100;
   if (a === 1 && b !== 11) return one;
   if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return few;
   return many;
@@ -29,7 +30,7 @@ const ru: Dict = {
   renderLists: "Списки",
   renderTodo: "Задачи",
   settings: "Настройки",
-  ago: (y: number, m: number, d: number) => [y && `${y} г.`, m && `${m} мес.`, d && `${d} дн.`].filter(Boolean).join(" ") + " назад",
+  ago: (y: number, m: number, d: number) => `${[y && `${y} г.`, m && `${m} мес.`, d && `${d} дн.`].filter(Boolean).join(" ")} назад`,
   back: "Назад",
   renderSection: "Оформлять, когда заметка теряет фокус",
   trayIcon: "Значок в строке меню",
@@ -55,7 +56,13 @@ const ru: Dict = {
   syncLast: (email: string, when: string) => `${email} · последняя синхронизация ${when}`,
   syncNever: (email: string) => `${email} · ещё не синхронизировано`,
   syncFailed: (e: unknown) => `Ошибка синхронизации: ${e}`,
-  trayStyles: { default: "Стандартный", "layout-freeform": "Свободный", "layout-grid-circles": "Сетка точек", waypoints: "Узлы", bubbles: "Пузыри" },
+  trayStyles: {
+    default: "Стандартный",
+    "layout-freeform": "Свободный",
+    "layout-grid-circles": "Сетка точек",
+    waypoints: "Узлы",
+    bubbles: "Пузыри",
+  },
   trayFailed: (e: unknown) => `Не удалось сменить значок: ${e}`,
   readonlyArchived: "В архиве · только чтение",
   themeSystem: "Авто",
@@ -99,7 +106,20 @@ const ru: Dict = {
   nothingToCopy: "Нечего копировать",
   clipEmpty: "В буфере обмена нет текста",
   clipFailed: (e: unknown) => `Ошибка буфера обмена: ${e}`,
-  colors: { yellow: "Жёлтый", cream: "Кремовый", orange: "Оранжевый", coral: "Коралловый", pink: "Розовый", purple: "Фиолетовый", blue: "Синий", cyan: "Голубой", mint: "Мятный", green: "Зелёный", white: "Белый", gray: "Серый" },
+  colors: {
+    yellow: "Жёлтый",
+    cream: "Кремовый",
+    orange: "Оранжевый",
+    coral: "Коралловый",
+    pink: "Розовый",
+    purple: "Фиолетовый",
+    blue: "Синий",
+    cyan: "Голубой",
+    mint: "Мятный",
+    green: "Зелёный",
+    white: "Белый",
+    gray: "Серый",
+  },
 };
 
 export default ru;

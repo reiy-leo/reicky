@@ -85,7 +85,11 @@ function item(it: NoteSummary) {
   row.className = "item-row";
   const text = document.createElement("span");
   text.className = "item-text";
-  text.textContent = it.preview.split("\n").find((l) => l.trim())?.trim() || t.empty;
+  text.textContent =
+    it.preview
+      .split("\n")
+      .find((l) => l.trim())
+      ?.trim() || t.empty;
   const time = document.createElement("span");
   time.className = "meta-time";
   time.textContent = fmtTime(it.modified);
@@ -187,22 +191,25 @@ function resetList() {
   offset = 0;
   hasMore = true;
   loading = false;
-  document.querySelectorAll<HTMLElement>(".tab").forEach((b) =>
-    b.classList.toggle("active", (b.dataset.archived === "true") === showArchived),
-  );
+  document.querySelectorAll<HTMLElement>(".tab").forEach((b) => {
+    b.classList.toggle("active", (b.dataset.archived === "true") === showArchived);
+  });
   loadMore();
 }
 
-new IntersectionObserver((es) => {
-  if (es.some((e) => e.isIntersecting)) loadMore();
-}, { root: listEl.parentElement }).observe(sentinel);
+new IntersectionObserver(
+  (es) => {
+    if (es.some((e) => e.isIntersecting)) loadMore();
+  },
+  { root: listEl.parentElement },
+).observe(sentinel);
 
-document.querySelectorAll<HTMLElement>(".tab").forEach((b) =>
+document.querySelectorAll<HTMLElement>(".tab").forEach((b) => {
   b.addEventListener("click", () => {
     showArchived = b.dataset.archived === "true";
     resetList();
-  }),
-);
+  });
+});
 
 let qTimer: number | undefined;
 q.addEventListener("input", () => {
@@ -239,10 +246,14 @@ $("btn-back").addEventListener("click", () => showSettings(false));
 // 菜单栏图标样式（lucide 图标；default = 原图标）
 const TRAY_ICONS: Record<string, string> = {
   default: "",
-  "layout-freeform": '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="4" rx="1"/><rect width="7" height="7" x="4" y="14" rx="1"/>',
-  "layout-grid-circles": '<circle cx="17.5" cy="17.5" r="3.5"/><circle cx="17.5" cy="6.5" r="3.5"/><circle cx="6.5" cy="17.5" r="3.5"/><circle cx="6.5" cy="6.5" r="3.5"/>',
-  waypoints: '<path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>',
-  bubbles: '<path d="M7.001 15.085A1.5 1.5 0 0 1 9 16.5"/><circle cx="18.5" cy="8.5" r="3.5"/><circle cx="7.5" cy="16.5" r="5.5"/><circle cx="7.5" cy="4.5" r="2.5"/>',
+  "layout-freeform":
+    '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="4" rx="1"/><rect width="7" height="7" x="4" y="14" rx="1"/>',
+  "layout-grid-circles":
+    '<circle cx="17.5" cy="17.5" r="3.5"/><circle cx="17.5" cy="6.5" r="3.5"/><circle cx="6.5" cy="17.5" r="3.5"/><circle cx="6.5" cy="6.5" r="3.5"/>',
+  waypoints:
+    '<path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>',
+  bubbles:
+    '<path d="M7.001 15.085A1.5 1.5 0 0 1 9 16.5"/><circle cx="18.5" cy="8.5" r="3.5"/><circle cx="7.5" cy="16.5" r="5.5"/><circle cx="7.5" cy="4.5" r="2.5"/>',
 };
 const trayBox = $("tray-styles");
 let trayStyle = "default";
@@ -256,9 +267,7 @@ function renderTrayStyles() {
       b.setAttribute("aria-checked", String(id === trayStyle));
       b.dataset.tip = t.trayStyles[id];
       b.setAttribute("aria-label", t.trayStyles[id]);
-      b.innerHTML = svg
-        ? `<svg viewBox="0 0 24 24">${svg}</svg>`
-        : '<img src="/tray-template.png" alt="" draggable="false" />';
+      b.innerHTML = svg ? `<svg viewBox="0 0 24 24">${svg}</svg>` : '<img src="/tray-template.png" alt="" draggable="false" />';
       b.addEventListener("click", async () => {
         if (id === trayStyle) return;
         try {
@@ -273,23 +282,28 @@ function renderTrayStyles() {
     }),
   );
 }
-api.getTrayIcon().then((s) => {
-  trayStyle = s;
-  renderTrayStyles();
-}).catch(() => {});
+api
+  .getTrayIcon()
+  .then((s) => {
+    trayStyle = s;
+    renderTrayStyles();
+  })
+  .catch(() => {});
 
 // ---------- 渲染开关（作用于所有便签窗口） ----------
 const toggles = document.querySelectorAll<HTMLInputElement>("[data-render]");
 function syncToggles(o: RenderOpts) {
-  toggles.forEach((x) => (x.checked = o[x.dataset.render as keyof RenderOpts]));
+  toggles.forEach((x) => {
+    x.checked = o[x.dataset.render as keyof RenderOpts];
+  });
 }
-toggles.forEach((x) =>
+toggles.forEach((x) => {
   x.addEventListener("change", () => {
     const o = loadRender();
     o[x.dataset.render as keyof RenderOpts] = x.checked;
     saveRender(o);
-  }),
-);
+  });
+});
 // 随系统启动：状态以系统为准，每次进设置页都读一次
 const autostart = $<HTMLInputElement>("autostart");
 async function syncAutostart() {
@@ -422,10 +436,7 @@ refreshSync();
 // ---------- 语言 ----------
 const langSelect = $<HTMLSelectElement>("lang-select");
 function renderLangSelect() {
-  langSelect.replaceChildren(
-    new Option(t.langSystem, "system"),
-    ...LANGS.map((l) => new Option(LANG_NAMES[l], l)),
-  );
+  langSelect.replaceChildren(new Option(t.langSystem, "system"), ...LANGS.map((l) => new Option(LANG_NAMES[l], l)));
   langSelect.value = langPref;
 }
 langSelect.addEventListener("change", () => {

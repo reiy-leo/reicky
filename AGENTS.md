@@ -36,6 +36,9 @@ src-tauri/src/store.rs 本机存储：<app_data>/notes/<id>.json + state.json，
 pnpm install
 pnpm typecheck
 pnpm build                     # 仅前端
+pnpm check                     # Biome 格式 + lint，再跑 tsc；提交前跑
+pnpm fix                       # Biome 自动修格式和能修的 lint
+(cd src-tauri && cargo fmt)     # Rust 格式
 pnpm app:dev                   # 运行桌面应用
 pnpm app:build                 # 打包
 cd src-tauri && cargo test     # 存储层单测

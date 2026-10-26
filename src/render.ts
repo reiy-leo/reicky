@@ -1,7 +1,11 @@
 // 便签渲染：笔记仍是纯文本，窗口失焦时按开关把链接 / 列表 / 待办渲染出来，点一下回到编辑。
 // 开关是全局的：存 localStorage reicky.render，在列表面板底部切换，并广播 Tauri 事件让所有窗口同步。
 import { emit, listen } from "@tauri-apps/api/event";
-export interface RenderOpts { links: boolean; lists: boolean; todo: boolean }
+export interface RenderOpts {
+  links: boolean;
+  lists: boolean;
+  todo: boolean;
+}
 const KEY = "reicky.render";
 const DEFAULTS: RenderOpts = { links: true, lists: true, todo: true };
 
@@ -28,9 +32,11 @@ const URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"'，。；、）】]+[^\s<>"'，�
 
 /** 有没有可渲染的东西；没有就一直用编辑器，省得来回切 */
 export function hasRenderable(text: string, o: RenderOpts) {
-  return text.split("\n").some(
-    (l) => (o.todo && TODO.test(l)) || (o.lists && (UL.test(l) || OL.test(l))) || (o.links && new RegExp(URL_RE.source, "i").test(l)),
-  );
+  return text
+    .split("\n")
+    .some(
+      (l) => (o.todo && TODO.test(l)) || (o.lists && (UL.test(l) || OL.test(l))) || (o.links && new RegExp(URL_RE.source, "i").test(l)),
+    );
 }
 
 function inline(text: string, o: RenderOpts): Node[] {
@@ -60,8 +66,10 @@ export function renderText(el: HTMLElement, text: string, o: RenderOpts) {
       const row = document.createElement("div");
       row.className = "r-line";
       row.dataset.line = String(i);
-      let m: RegExpMatchArray | null;
-      if (o.todo && (m = line.match(TODO))) {
+      const todo = o.todo ? line.match(TODO) : null;
+      const li = !todo && o.lists ? (line.match(UL) ?? line.match(OL)) : null;
+      if (todo) {
+        const m = todo;
         row.classList.add("r-todo");
         row.style.paddingLeft = `${indentOf(m[1]) * 0.5}em`;
         const box = document.createElement("span");
@@ -71,7 +79,8 @@ export function renderText(el: HTMLElement, text: string, o: RenderOpts) {
         const body = document.createElement("span");
         body.append(...inline(m[3], o));
         row.append(box, body);
-      } else if (o.lists && ((m = line.match(UL)) || (m = line.match(OL)))) {
+      } else if (li) {
+        const m = li;
         const ordered = /^\s*\d/.test(line);
         row.classList.add("r-li");
         row.style.paddingLeft = `${indentOf(m[1]) * 0.5}em`;

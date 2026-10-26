@@ -47,7 +47,9 @@ function showTip(el: HTMLElement) {
   tip.textContent = el.dataset.tip ?? "";
   tip.hidden = false;
   const r = el.getBoundingClientRect();
-  const w = tip.offsetWidth, h = tip.offsetHeight, pad = 4;
+  const w = tip.offsetWidth,
+    h = tip.offsetHeight,
+    pad = 4;
   const left = Math.min(Math.max(pad, r.left + r.width / 2 - w / 2), innerWidth - w - pad);
   const above = r.top - h - 6;
   tip.style.left = `${left}px`;
@@ -57,7 +59,7 @@ document.addEventListener("mouseover", (e) => {
   const el = (e.target as HTMLElement).closest<HTMLElement>("[data-tip]");
   if (el === tipFor) return;
   hideTip();
-  if (!el || !el.dataset.tip) return;
+  if (!el?.dataset.tip) return;
   tipFor = el;
   tipTimer = window.setTimeout(() => showTip(el), 350);
 });

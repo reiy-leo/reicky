@@ -19,8 +19,12 @@ function apply() {
   isDark = themeMode === "dark" || (themeMode === "system" && media.matches);
   document.documentElement.dataset.theme = isDark ? "dark" : "light";
   // 原生窗口外观（mac 圆角描边/阴影）跟着走；跟随系统时交还给系统
-  getCurrentWindow().setTheme(themeMode === "system" ? null : themeMode).catch(() => {});
-  listeners.forEach((cb) => cb());
+  getCurrentWindow()
+    .setTheme(themeMode === "system" ? null : themeMode)
+    .catch(() => {});
+  listeners.forEach((cb) => {
+    cb();
+  });
 }
 
 export function setThemeMode(m: ThemeMode) {

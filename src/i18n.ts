@@ -32,7 +32,17 @@ export const LANG_NAMES: Record<Lang, string> = {
 const dict: Record<Lang, Dict> = { zh, en, ja, de, fr, es, pt, ru, id };
 
 /** 日期格式用的地区代码 */
-const LOCALES: Record<Lang, string> = { zh: "zh-CN", en: "en-US", ja: "ja-JP", de: "de-DE", fr: "fr-FR", es: "es-ES", pt: "pt-BR", ru: "ru-RU", id: "id-ID" };
+const LOCALES: Record<Lang, string> = {
+  zh: "zh-CN",
+  en: "en-US",
+  ja: "ja-JP",
+  de: "de-DE",
+  fr: "fr-FR",
+  es: "es-ES",
+  pt: "pt-BR",
+  ru: "ru-RU",
+  id: "id-ID",
+};
 
 const KEY = "reicky.lang";
 

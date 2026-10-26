@@ -21,7 +21,7 @@ const zh: Dict = {
   renderLists: "列表",
   renderTodo: "待办",
   settings: "设置",
-  ago: (y: number, m: number, d: number) => [y && `${y}年`, m && `${m}个月`, d && `${d}天`].filter(Boolean).join("") + "前",
+  ago: (y: number, m: number, d: number) => `${[y && `${y}年`, m && `${m}个月`, d && `${d}天`].filter(Boolean).join("")}前`,
   back: "返回",
   renderSection: "便签失焦时渲染",
   trayIcon: "菜单栏图标",
@@ -91,7 +91,20 @@ const zh: Dict = {
   nothingToCopy: "没有可拷贝的内容",
   clipEmpty: "剪贴板里没有文本",
   clipFailed: (e: unknown) => `剪贴板出错：${e}`,
-  colors: { yellow: "黄", cream: "奶油", orange: "橙", coral: "珊瑚", pink: "粉", purple: "紫", blue: "蓝", cyan: "青", mint: "薄荷", green: "绿", white: "白", gray: "灰" },
+  colors: {
+    yellow: "黄",
+    cream: "奶油",
+    orange: "橙",
+    coral: "珊瑚",
+    pink: "粉",
+    purple: "紫",
+    blue: "蓝",
+    cyan: "青",
+    mint: "薄荷",
+    green: "绿",
+    white: "白",
+    gray: "灰",
+  },
 };
 
 export default zh;
