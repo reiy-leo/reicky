@@ -1,0 +1,1 @@
+- 2026-10-26 10cc451 WebDAV 同步（dav.rs，文件名带修改时间，和 Google 二选一）+ 设置页 ydiyr 跳转；Rust 未编译验证（沙箱 OOM）。

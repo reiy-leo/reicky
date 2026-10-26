@@ -17,7 +17,7 @@ macOS（含 Intel x86_64）/ Windows / Linux。不做移动端。界面适配各
   - 归档：归档当前笔记，主窗口换一张新的空白便签；已归档笔记可恢复
   - 笔记列表：从底部弹出，按修改时间倒序，滚动加载更多；分“笔记 / 已归档”；点一条在独立小窗口打开
 - 笔记**不能删除**
-- 多语言：中文、English，默认跟随系统
+- 多语言：9 种（中、英、日、德、法、西、葡、俄、印尼），默认跟随系统，设置里可以手动选
 
 ## 以后再做
 - 同步：Google Drive appDataFolder（已做，配置见 docs/GOOGLE_SYNC.md）、WebDAV（已做，和 Google 二选一，见 docs/WEBDAV_SYNC.md）

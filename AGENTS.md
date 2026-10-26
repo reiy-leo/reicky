@@ -14,7 +14,7 @@
 ## 技术栈
 - Tauri 2（Rust）+ TypeScript + Vite，原生 DOM，无框架
 - 插件：window-state（记住窗口位置尺寸）、opener（打开路径 / 在文件管理器显示）
-- 界面语言：中文 / English（`src/i18n.ts`，默认跟随系统）
+- 界面语言：9 种（`src/i18n.ts` 管切换，文案在 `src/locales/*.ts`，以 `en.ts` 的键为准；默认跟随系统，设置页「语言」下拉可改）。加文案时 9 个文件都要加，缺键 tsc 报错
 - 必须能在 x86_64 macOS（2018 Intel MacBook Pro，macOS 15）跑；最低 macOS 10.15，前端构建 target safari13
 
 ## 目录
@@ -22,7 +22,8 @@
 index.html            界面骨架（主窗口和笔记小窗口共用；小窗口 URL 带 ?note=<id>）
 src/main.ts           交互：编辑自动保存、拖入路径、颜色、形状、归档、底部列表
 src/api.ts            调 Rust 命令的类型化封装
-src/i18n.ts           中英文案
+src/i18n.ts           语言检测与切换
+src/locales/*.ts      各语言文案（en.ts 定义 Dict 类型）
 src/styles.css        便签颜色 × 平台观感（html[data-platform] / html[data-color]）
 src-tauri/src/lib.rs  Tauri 命令、窗口
 src-tauri/src/store.rs 本机存储：<app_data>/notes/<id>.json + state.json，原子写

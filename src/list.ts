@@ -6,7 +6,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { api, COLORS, paperOf, type Color, type NoteSummary, type SyncStatus } from "./api";
 import { isDark, onThemeChange } from "./theme";
 import { loadRender, onRenderChange, saveRender, type RenderOpts } from "./render";
-import { lang, onLangChange, t } from "./i18n";
+import { broadcastLang, LANG_NAMES, LANGS, langPref, locale, onLangChange, setLang, t, type LangPref } from "./i18n";
 import { $, applyI18n, hideTip } from "./common";
 
 const win = getCurrentWindow();
@@ -36,7 +36,7 @@ function fmtTime(ms: number) {
   const d = new Date(ms);
   const now = new Date();
   if (d.toDateString() === now.toDateString()) {
-    const loc = lang === "zh" ? "zh-CN" : "en-US";
+    const loc = locale();
     return d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
   }
   let y = now.getFullYear() - d.getFullYear();
@@ -89,7 +89,7 @@ function item(it: NoteSummary) {
   const time = document.createElement("span");
   time.className = "meta-time";
   time.textContent = fmtTime(it.modified);
-  time.dataset.tip = new Date(it.modified).toLocaleString(lang === "zh" ? "zh-CN" : "en-US");
+  time.dataset.tip = new Date(it.modified).toLocaleString(locale());
   if (it.open) {
     const dot = document.createElement("span");
     dot.className = "open-dot";
@@ -345,7 +345,7 @@ function renderSync(st = syncSt) {
           ? t.syncBusy
           : on
             ? st.lastSync
-              ? t.syncLast(who, new Date(st.lastSync).toLocaleString(lang === "zh" ? "zh-CN" : "en-US"))
+              ? t.syncLast(who, new Date(st.lastSync).toLocaleString(locale()))
               : t.syncNever(who)
             : st.configured
               ? t.syncOff
@@ -419,6 +419,21 @@ listen("notes-synced", () => {
 });
 refreshSync();
 
+// ---------- 语言 ----------
+const langSelect = $<HTMLSelectElement>("lang-select");
+function renderLangSelect() {
+  langSelect.replaceChildren(
+    new Option(t.langSystem, "system"),
+    ...LANGS.map((l) => new Option(LANG_NAMES[l], l)),
+  );
+  langSelect.value = langPref;
+}
+langSelect.addEventListener("change", () => {
+  setLang(langSelect.value as LangPref);
+  applyTexts();
+  broadcastLang();
+});
+
 syncToggles(loadRender());
 onRenderChange(syncToggles);
 
@@ -449,6 +464,7 @@ listen("list-shown", () => {
 });
 
 function applyTexts() {
+  renderLangSelect();
   renderSync();
   applyI18n();
   renderTrayStyles();

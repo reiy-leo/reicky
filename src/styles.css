@@ -292,6 +292,8 @@ body.list-window .pane:not([hidden]) { flex: 1; min-height: 0; display: flex; fl
 .sync-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sync-text.err { color: #e5484d; white-space: normal; }
 .link-btn { flex: none; border: 0; padding: 0; background: none; font: inherit; color: var(--ink-soft); text-decoration: underline; cursor: default; }
+.set-select { height: 22px; max-width: 150px; padding: 0 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--seg); color: var(--ink); font: 12px var(--font); outline: 0; }
+.set-select:focus { box-shadow: 0 0 0 2px rgba(0, 120, 255, 0.35); }
 .dav-form { display: flex; flex-direction: column; gap: 6px; padding: 4px 0 8px; }
 .dav-form input { height: 26px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--seg); font: 12px var(--font); color: var(--ink); outline: 0; -webkit-user-select: text; user-select: text; }
 .dav-form input:focus { box-shadow: 0 0 0 2px rgba(0, 120, 255, 0.35); }

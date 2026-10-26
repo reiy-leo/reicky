@@ -7,7 +7,7 @@ import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { save } from "@tauri-apps/plugin-dialog";
 import { api, colorOf, COLORS, paperOf, type Note } from "./api";
 import { isDark, onThemeChange, setThemeMode, themeMode, type ThemeMode } from "./theme";
-import { broadcastLang, lang, onLangChange, setLang, t, type Lang } from "./i18n";
+import { onLangChange, t } from "./i18n";
 import { $, applyI18n, hideTip } from "./common";
 const editor = $<HTMLTextAreaElement>("editor");
 const pathsEl = $<HTMLUListElement>("paths");
@@ -34,7 +34,6 @@ function flash(msg: string) {
 function applyTexts() {
   editor.placeholder = t.placeholder;
   applyI18n();
-  document.querySelectorAll<HTMLElement>(".lang").forEach((b) => b.classList.toggle("active", b.dataset.lang === lang));
   renderThemeOpts();
   renderSwatches();
   updateShapeTitle();
@@ -155,13 +154,6 @@ onThemeChange(() => {
   if (note) setNote(note);
 });
 
-document.querySelectorAll<HTMLButtonElement>(".lang").forEach((b) =>
-  b.addEventListener("click", () => {
-    setLang(b.dataset.lang as Lang);
-    applyTexts();
-    broadcastLang();
-  }),
-);
 onLangChange(applyTexts);
 
 // ---------- 置顶开关：默认置顶，按窗口 label 记住 ----------

@@ -1,221 +1,82 @@
 import { emit, listen } from "@tauri-apps/api/event";
-// 界面语言：中文 / English。默认跟随系统，手动选择存在 localStorage。
-export type Lang = "zh" | "en";
+import type { Dict } from "./locales/en";
+import en from "./locales/en";
+import zh from "./locales/zh";
+import ja from "./locales/ja";
+import de from "./locales/de";
+import fr from "./locales/fr";
+import es from "./locales/es";
+import pt from "./locales/pt";
+import ru from "./locales/ru";
+import id from "./locales/id";
+// 界面语言：9 种，默认跟随系统；设置里手动选的存在 localStorage（"system" 表示跟随系统）。
+// 文案在 src/locales/，以 en.ts 的键为准（类型 Dict），缺键编译不过。
 
-const dict = {
-  zh: {
-    placeholder: "随手贴点什么……拖文件进来只记路径",
-    color: "颜色",
-    shape: "变换形状",
-    bigType: "全屏大字（⌘L / Ctrl+L，Esc 或点击退出）",
-    bigEmpty: "空白便签没有可显示的文字",
-    archive: "归档",
-    unarchive: "恢复",
-    list: "笔记列表",
-    close: "关闭",
-    stow: "收起来（留在笔记列表里）",
-    quit: "退出 reicky",
-    newNote: "新建便签（⌘/Ctrl+N）",
-    tabNotes: "笔记",
-    tabArchived: "已归档",
-    language: "语言",
-    renderLinks: "链接",
-    renderLists: "列表",
-    renderTodo: "待办",
-    settings: "设置",
-    ago: (y: number, m: number, d: number) => [y && `${y}年`, m && `${m}个月`, d && `${d}天`].filter(Boolean).join("") + "前",
-    back: "返回",
-    renderSection: "便签失焦时渲染",
-    trayIcon: "菜单栏图标",
-    general: "通用",
-    autostart: "随系统启动",
-    autostartFailed: (e: unknown) => `开机启动设置失败：${e}`,
-    syncSection: "同步",
-    syncGoogle: "用 Google 同步",
-    syncNow: "立即同步",
-    syncOff: "二选一：Google Drive 的应用私有空间，或你自己的 WebDAV",
-    syncDav: "用 WebDAV 同步",
-    davUrl: "WebDAV 地址，如 https://dav.example.com/dav",
-    davUser: "用户名",
-    davPass: "密码（应用专用密码更好）",
-    davConnect: "连接",
-    davChecking: "正在连接…",
-    cancel: "取消",
-    ydiyrTitle: "你的数据你负责",
-    ydiyrBody: "笔记只存在你的设备和你自己的网盘里，开发者看不到。点这里了解为什么。",
-    syncNotConfigured: "这个版本没有配置 Google 客户端",
-    syncWaiting: "请在浏览器里完成登录…",
-    syncBusy: "同步中…",
-    syncLast: (email: string, when: string) => `${email} · 上次同步 ${when}`,
-    syncNever: (email: string) => `${email} · 还没同步过`,
-    syncFailed: (e: unknown) => `同步失败：${e}`,
-    trayStyles: { default: "默认", "layout-freeform": "自由布局", "layout-grid-circles": "圆点网格", waypoints: "节点", bubbles: "气泡" } as Record<string, string>,
-    trayFailed: (e: unknown) => `换图标失败：${e}`,
-    readonlyArchived: "已归档，只读",
-    themeSystem: "跟随系统",
-    themeLight: "浅色",
-    themeDark: "深色",
-    shapeTall: "瘦高",
-    shapeWide: "宽扁",
-    shapeSquare: "正方形",
-    pathTip: "单击打开，⌥/Alt+单击在文件管理器中显示",
-    pathRemove: "移除这条路径引用（不会动文件）",
-    pathsAdded: (n: number) => `已记下 ${n} 个路径`,
-    pathCount: (n: number) => `${n} 个路径`,
-    saveFailed: (e: unknown) => `保存失败：${e}`,
-    loadFailed: (e: unknown) => `读取失败：${e}`,
-    openFailed: (e: unknown) => `打不开：${e}`,
-    archived: "已归档",
-    archivedNew: "已归档，开了一张新的",
-    restored: "已恢复",
-    emptyNoArchive: "空白便签不用归档",
-    emptyNoExport: "空白便签没有可保存的内容",
-    exported: (name: string) => `已保存：${name}`,
-    exportFailed: (e: unknown) => `保存文件失败：${e}`,
-    empty: "（空）",
-    emptyList: "还没有笔记",
-    noMatch: "没有匹配的笔记",
-    search: "搜索文字或路径",
-    filterBy: (c: string) => `只看${c}色`,
-    filterClear: "取消颜色筛选",
-    mainNote: "主便签",
-    isOpen: "正开着",
-    emptyArchived: "还没有归档的笔记",
-    pinOn: "已置顶，点击取消",
-    pinOff: "未置顶，点击置顶",
-    pinnedNow: "已置顶",
-    unpinnedNow: "已取消置顶",
-    copy: "拷贝（有选中拷选中，否则整张）",
-    paste: "粘贴到光标处",
-    copiedAll: "已拷贝整张便签",
-    copiedSel: "已拷贝选中内容",
-    pasted: "已粘贴",
-    nothingToCopy: "没有可拷贝的内容",
-    clipEmpty: "剪贴板里没有文本",
-    clipFailed: (e: unknown) => `剪贴板出错：${e}`,
-    colors: { yellow: "黄", cream: "奶油", orange: "橙", coral: "珊瑚", pink: "粉", purple: "紫", blue: "蓝", cyan: "青", mint: "薄荷", green: "绿", white: "白", gray: "灰" },
-  },
-  en: {
-    placeholder: "Jot anything… dropped files are kept as paths only",
-    color: "Color",
-    shape: "Change shape",
-    bigType: "Large type, full screen (⌘L / Ctrl+L, Esc or click to exit)",
-    bigEmpty: "Nothing to show in a blank note",
-    archive: "Archive",
-    unarchive: "Restore",
-    list: "Notes",
-    close: "Close",
-    stow: "Tuck away (stays in Notes)",
-    quit: "Quit reicky",
-    newNote: "New note (⌘/Ctrl+N)",
-    tabNotes: "Notes",
-    tabArchived: "Archived",
-    language: "Language",
-    renderLinks: "Links",
-    renderLists: "Lists",
-    renderTodo: "To-dos",
-    settings: "Settings",
-    ago: (y: number, m: number, d: number) => [y && `${y}y`, m && `${m}m`, d && `${d}d`].filter(Boolean).join(" ") + " ago",
-    back: "Back",
-    renderSection: "Render when a note loses focus",
-    trayIcon: "Menu bar icon",
-    general: "General",
-    autostart: "Launch at login",
-    autostartFailed: (e: unknown) => `Couldn't change launch at login: ${e}`,
-    syncSection: "Sync",
-    syncGoogle: "Sync with Google",
-    syncNow: "Sync now",
-    syncOff: "Pick one: a private app folder in your Google Drive, or your own WebDAV",
-    syncDav: "Sync with WebDAV",
-    davUrl: "WebDAV URL, e.g. https://dav.example.com/dav",
-    davUser: "Username",
-    davPass: "Password (an app password is better)",
-    davConnect: "Connect",
-    davChecking: "Connecting…",
-    cancel: "Cancel",
-    ydiyrTitle: "Your data is your responsibility",
-    ydiyrBody: "Notes live only on your devices and in your own storage. The developer can't see them. Tap to learn why.",
-    syncNotConfigured: "This build has no Google client configured",
-    syncWaiting: "Finish signing in in your browser…",
-    syncBusy: "Syncing…",
-    syncLast: (email: string, when: string) => `${email} · last synced ${when}`,
-    syncNever: (email: string) => `${email} · not synced yet`,
-    syncFailed: (e: unknown) => `Sync failed: ${e}`,
-    trayStyles: { default: "Default", "layout-freeform": "Freeform", "layout-grid-circles": "Grid circles", waypoints: "Waypoints", bubbles: "Bubbles" } as Record<string, string>,
-    trayFailed: (e: unknown) => `Couldn't change icon: ${e}`,
-    readonlyArchived: "Archived · read-only",
-    themeSystem: "Auto",
-    themeLight: "Light",
-    themeDark: "Dark",
-    shapeTall: "Tall",
-    shapeWide: "Wide",
-    shapeSquare: "Square",
-    pathTip: "Click to open, ⌥/Alt+click to reveal in file manager",
-    pathRemove: "Remove this path reference (the file is untouched)",
-    pathsAdded: (n: number) => `Saved ${n} path${n > 1 ? "s" : ""}`,
-    pathCount: (n: number) => `${n} path${n > 1 ? "s" : ""}`,
-    saveFailed: (e: unknown) => `Save failed: ${e}`,
-    loadFailed: (e: unknown) => `Load failed: ${e}`,
-    openFailed: (e: unknown) => `Can't open: ${e}`,
-    archived: "Archived",
-    archivedNew: "Archived, started a fresh note",
-    restored: "Restored",
-    emptyNoArchive: "Nothing to archive in a blank note",
-    emptyNoExport: "Nothing to save in a blank note",
-    exported: (name: string) => `Saved: ${name}`,
-    exportFailed: (e: unknown) => `Couldn't save file: ${e}`,
-    empty: "(empty)",
-    emptyList: "No notes yet",
-    noMatch: "No matching notes",
-    search: "Search text or paths",
-    filterBy: (c: string) => `Only ${c.toLowerCase()}`,
-    filterClear: "Clear color filter",
-    mainNote: "Main note",
-    isOpen: "Open now",
-    emptyArchived: "No archived notes yet",
-    pinOn: "Always on top — click to unpin",
-    pinOff: "Not on top — click to pin",
-    pinnedNow: "Pinned on top",
-    unpinnedNow: "Unpinned",
-    copy: "Copy (selection, or the whole note)",
-    paste: "Paste at cursor",
-    copiedAll: "Copied the whole note",
-    copiedSel: "Copied selection",
-    pasted: "Pasted",
-    nothingToCopy: "Nothing to copy",
-    clipEmpty: "No text on the clipboard",
-    clipFailed: (e: unknown) => `Clipboard error: ${e}`,
-    colors: { yellow: "Yellow", cream: "Cream", orange: "Orange", coral: "Coral", pink: "Pink", purple: "Purple", blue: "Blue", cyan: "Cyan", mint: "Mint", green: "Green", white: "White", gray: "Gray" },
-  },
-} as const;
+export const LANGS = ["zh", "en", "ja", "de", "fr", "es", "pt", "ru", "id"] as const;
+export type Lang = (typeof LANGS)[number];
+export type LangPref = Lang | "system";
+
+/** 下拉框里显示的语言名：用各自的语言写 */
+export const LANG_NAMES: Record<Lang, string> = {
+  zh: "中文",
+  en: "English",
+  ja: "日本語",
+  de: "Deutsch",
+  fr: "Français",
+  es: "Español",
+  pt: "Português",
+  ru: "Русский",
+  id: "Bahasa Indonesia",
+};
+
+const dict: Record<Lang, Dict> = { zh, en, ja, de, fr, es, pt, ru, id };
+
+/** 日期格式用的地区代码 */
+const LOCALES: Record<Lang, string> = { zh: "zh-CN", en: "en-US", ja: "ja-JP", de: "de-DE", fr: "fr-FR", es: "es-ES", pt: "pt-BR", ru: "ru-RU", id: "id-ID" };
 
 const KEY = "reicky.lang";
 
-function detect(): Lang {
+const isLang = (v: unknown): v is Lang => (LANGS as readonly unknown[]).includes(v);
+const isPref = (v: unknown): v is LangPref => v === "system" || isLang(v);
+
+/** 按系统语言挑：依次看 navigator.languages，取第一个支持的；都不支持就用英文 */
+function systemLang(): Lang {
+  for (const l of navigator.languages?.length ? navigator.languages : [navigator.language]) {
+    const base = l.toLowerCase().split(/[-_]/)[0];
+    if (base === "in") return "id"; // 印尼语的旧代码
+    if (isLang(base)) return base;
+  }
+  return "en";
+}
+
+function readPref(): LangPref {
   const saved = localStorage.getItem(KEY);
-  if (saved === "zh" || saved === "en") return saved;
-  return navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
+  return isPref(saved) ? saved : "system";
 }
 
-export let lang: Lang = detect();
-export let t = dict[lang];
+export let langPref: LangPref = readPref();
+export let lang: Lang = langPref === "system" ? systemLang() : langPref;
+export let t: Dict = dict[lang];
+export const locale = () => LOCALES[lang];
 
-export function setLang(l: Lang) {
-  lang = l;
-  t = dict[l];
-  localStorage.setItem(KEY, l);
-  document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+export function setLang(p: LangPref) {
+  langPref = p;
+  lang = p === "system" ? systemLang() : p;
+  t = dict[lang];
+  if (p === "system") localStorage.removeItem(KEY);
+  else localStorage.setItem(KEY, p);
+  document.documentElement.lang = LOCALES[lang];
 }
 
-document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+document.documentElement.lang = LOCALES[lang];
 
 // 其他窗口切换语言时同步（用 Tauri 事件广播，WebView 之间不一定互发 storage 事件）
 export function broadcastLang() {
-  emit("lang-changed", lang).catch(() => {});
+  emit("lang-changed", langPref).catch(() => {});
 }
 export function onLangChange(cb: () => void) {
-  listen<Lang>("lang-changed", (e) => {
-    if (e.payload === lang || (e.payload !== "zh" && e.payload !== "en")) return;
+  listen<LangPref>("lang-changed", (e) => {
+    if (!isPref(e.payload) || e.payload === langPref) return;
     setLang(e.payload);
     cb();
   });

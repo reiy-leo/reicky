@@ -6,7 +6,7 @@
 - 拖入文件/文件夹只记路径引用，不复制文件
 - 笔记只能归档，不能删除
 - 底部按钮：颜色/语言、变换形状（瘦高 / 宽扁 / 正方形）、归档、笔记列表
-- 界面中文 / English，默认跟随系统
+- 界面 9 种语言（中文、English、日本語、Deutsch、Français、Español、Português、Русский、Bahasa Indonesia），默认跟随系统，设置里可以改
 - 存储：本机 JSON；可选同步到 Google Drive appDataFolder 或你自己的 WebDAV（二选一，见 docs/WEBDAV_SYNC.md）
 
 ## 开发
