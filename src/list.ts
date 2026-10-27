@@ -432,7 +432,7 @@ davForm.addEventListener("submit", async (e) => {
 });
 syncNowBtn.addEventListener("click", () => api.syncNow());
 $("ydiyr").addEventListener("click", () => {
-  openUrl("https://your-data-is-your-responsibility.rei8t.dev").catch(() => {});
+  openUrl("https://your-data-is-your-responsibility.rei8t.dev").catch((err) => flash(t.openFailed(err)));
 });
 listen<SyncStatus>("sync-status", (e) => renderSync(e.payload));
 // 同步下载了笔记：列表开着就刷新
