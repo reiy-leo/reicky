@@ -121,7 +121,7 @@ fn tools() -> Value {
         },
         {
             "name": "create_note",
-            "description": "新建一张便签。应用开着时会出现在笔记列表最上面。",
+            "description": "新建一张便签。应用开着时会出现在贴纸列表最上面。",
             "inputSchema": { "type": "object", "properties": {
                 "text": { "type": "string" },
                 "color": color

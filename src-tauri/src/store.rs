@@ -90,7 +90,7 @@ impl Store {
 
     fn note_path(&self, id: &str) -> Result<PathBuf, String> {
         if !valid_id(id) {
-            return Err(format!("无效的笔记 id：{id}"));
+            return Err(format!("无效的贴纸 id：{id}"));
         }
         Ok(self.root.join("notes").join(format!("{id}.json")))
     }
@@ -112,7 +112,7 @@ impl Store {
     }
 
     pub fn get(&self, id: &str) -> Result<Note, String> {
-        let b = fs::read(self.note_path(id)?).map_err(|_| format!("找不到笔记：{id}"))?;
+        let b = fs::read(self.note_path(id)?).map_err(|_| format!("找不到贴纸：{id}"))?;
         serde_json::from_slice(&b).map_err(|e| e.to_string())
     }
 

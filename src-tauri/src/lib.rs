@@ -642,7 +642,7 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     #[cfg(target_os = "linux")]
     let builder = {
         use tauri::menu::{Menu, MenuItem};
-        let show = MenuItem::with_id(app, "list", "笔记列表 / Notes", true, None::<&str>)?;
+        let show = MenuItem::with_id(app, "list", "贴纸列表 / Notes", true, None::<&str>)?;
         let quit = MenuItem::with_id(app, "quit", "退出 / Quit", true, None::<&str>)?;
         builder
             .menu(&Menu::with_items(app, &[&show, &quit])?)
