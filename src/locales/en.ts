@@ -31,6 +31,7 @@ const en = {
   syncMode: "Sync with",
   syncNone: "Off",
   syncNow: "Sync now",
+  syncRelogin: "Sign in again",
   syncOff: "Pick one: a private app folder in your Google Drive, or your own WebDAV",
   davUrl: "WebDAV URL, e.g. https://dav.example.com/dav",
   davUser: "Username",

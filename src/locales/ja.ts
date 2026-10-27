@@ -32,6 +32,7 @@ const ja: Dict = {
   syncMode: "同期方法",
   syncNone: "オフ",
   syncNow: "今すぐ同期",
+  syncRelogin: "再ログイン",
   syncOff: "どちらか一つ：Google ドライブのアプリ専用領域か、自分の WebDAV",
   davUrl: "WebDAV の URL（例：https://dav.example.com/dav）",
   davUser: "ユーザー名",

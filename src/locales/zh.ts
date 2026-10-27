@@ -32,6 +32,7 @@ const zh: Dict = {
   syncMode: "同步方式",
   syncNone: "不同步",
   syncNow: "立即同步",
+  syncRelogin: "重新登录",
   syncOff: "二选一：Google Drive 的应用私有空间，或你自己的 WebDAV",
   davUrl: "WebDAV 地址，如 https://dav.example.com/dav",
   davUser: "用户名",

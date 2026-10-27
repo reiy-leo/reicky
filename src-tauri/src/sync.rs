@@ -70,6 +70,8 @@ pub struct Status {
     pub dav: Option<String>,
     pub last_sync: Option<u64>,
     pub busy: bool,
+    /// Google 授权不够或失效，界面上给「重新登录」
+    pub relogin: bool,
     pub error: Option<String>,
 }
 
@@ -174,6 +176,13 @@ struct Token {
     access_token: String,
     expires_in: Option<u64>,
     refresh_token: Option<String>,
+    /// 用户实际同意的权限（授权页可以只勾一部分）
+    scope: Option<String>,
+}
+
+/// 授权缺了或失效，要重新登录才能好
+fn need_relogin(err: &str) -> bool {
+    err.contains("insufficient") || err.contains("invalid_grant") || err.starts_with("401")
 }
 
 impl Sync {
@@ -193,6 +202,7 @@ impl Sync {
                 d.and_then(|d| d.last_sync)
             },
             busy: st.busy,
+            relogin: signed_in && st.error.as_deref().is_some_and(need_relogin),
             error: st.error.clone(),
         }
     }
@@ -330,6 +340,17 @@ pub fn sign_in(app: &AppHandle) -> Res<()> {
         .map_err(http_err)?
         .into_json()
         .map_err(|e| e.to_string())?;
+    // 授权页上 Drive 那一项可以不勾；没勾就同步不了，直接作废这次授权
+    if tok
+        .scope
+        .as_deref()
+        .is_some_and(|s| !s.contains("drive.appdata"))
+    {
+        let _ = agent()
+            .post("https://oauth2.googleapis.com/revoke")
+            .send_form(&[("token", tok.access_token.as_str())]);
+        return Err("没有给 Google 云端硬盘权限。请重新登录，在授权页勾上云端硬盘那一项".into());
+    }
     let rt = tok.refresh_token.ok_or("Google 没有返回 refresh token")?;
     let email = agent()
         .get("https://openidconnect.googleapis.com/v1/userinfo")

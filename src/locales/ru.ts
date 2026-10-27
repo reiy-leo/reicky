@@ -41,6 +41,7 @@ const ru: Dict = {
   syncMode: "Синхронизация",
   syncNone: "Выкл.",
   syncNow: "Синхронизировать",
+  syncRelogin: "Войти заново",
   syncOff: "Что-то одно: личная папка приложения в Google Диске или ваш собственный WebDAV",
   davUrl: "Адрес WebDAV, напр. https://dav.example.com/dav",
   davUser: "Имя пользователя",

@@ -32,6 +32,8 @@ export interface SyncStatus {
   dav: string | null;
   lastSync: number | null;
   busy: boolean;
+  /** Google 授权不够或失效，需要重新登录 */
+  relogin: boolean;
   error: string | null;
 }
 

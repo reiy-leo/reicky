@@ -32,6 +32,7 @@ const es: Dict = {
   syncMode: "Sincronizar con",
   syncNone: "Desactivada",
   syncNow: "Sincronizar ahora",
+  syncRelogin: "Volver a iniciar sesión",
   syncOff: "Elige uno: una carpeta privada en tu Google Drive o tu propio WebDAV",
   davUrl: "Dirección WebDAV, p. ej. https://dav.example.com/dav",
   davUser: "Usuario",

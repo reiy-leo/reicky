@@ -32,6 +32,7 @@ const id: Dict = {
   syncMode: "Sinkron dengan",
   syncNone: "Mati",
   syncNow: "Sinkronkan sekarang",
+  syncRelogin: "Masuk lagi",
   syncOff: "Pilih salah satu: folder aplikasi pribadi di Google Drive, atau WebDAV milik Anda",
   davUrl: "Alamat WebDAV, mis. https://dav.example.com/dav",
   davUser: "Nama pengguna",

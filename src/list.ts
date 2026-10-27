@@ -345,6 +345,7 @@ const davPass = $<HTMLInputElement>("dav-pass");
 const davSave = $<HTMLButtonElement>("dav-save");
 const syncText = $("sync-text");
 const syncNowBtn = $<HTMLButtonElement>("sync-now");
+const reloginBtn = $<HTMLButtonElement>("sync-relogin");
 let signingIn = false;
 let davChecking = false;
 let syncSt: SyncStatus | null = null;
@@ -358,7 +359,8 @@ function renderSync(st = syncSt) {
   syncMode.disabled = signingIn || davChecking;
   googleOpt.disabled = !st.configured;
   davSave.disabled = davChecking;
-  syncNowBtn.hidden = !on || st.busy || !davForm.hidden;
+  syncNowBtn.hidden = !on || st.busy || !davForm.hidden || st.relogin;
+  reloginBtn.hidden = !st.relogin || signingIn || st.busy;
   syncText.classList.toggle("err", !!st.error);
   syncText.textContent = signingIn
     ? t.syncWaiting
@@ -383,6 +385,21 @@ async function refreshSync() {
     renderSync(await api.syncStatus());
   } catch {}
 }
+// 登录成功后端会自动断开 WebDAV；取消登录则保留原来的 WebDAV。
+// 已登录但授权不够时再登录一次，新授权会替换旧的。
+async function signInGoogle() {
+  signingIn = true;
+  renderSync();
+  try {
+    const st = await api.syncSignIn();
+    signingIn = false;
+    renderSync(st);
+  } catch (err) {
+    signingIn = false;
+    await refreshSync();
+    renderSync({ ...(syncSt as SyncStatus), error: String(err) });
+  }
+}
 syncMode.addEventListener("change", async () => {
   const mode = syncMode.value;
   if (mode === "dav") {
@@ -394,17 +411,7 @@ syncMode.addEventListener("change", async () => {
   }
   davForm.hidden = true;
   if (mode === "google") {
-    // 登录成功后端会自动断开 WebDAV；取消登录则保留原来的 WebDAV
-    signingIn = true;
-    renderSync();
-    try {
-      const st = await api.syncSignIn();
-      signingIn = false;
-      renderSync(st);
-    } catch (err) {
-      signingIn = false;
-      renderSync({ ...(syncSt as SyncStatus), signedIn: false, error: String(err) });
-    }
+    await signInGoogle();
   } else {
     if (syncSt?.signedIn) await api.syncSignOut().catch(() => {});
     if (syncSt?.dav) await api.davDisconnect().catch(() => {});
@@ -431,6 +438,7 @@ davForm.addEventListener("submit", async (e) => {
   }
 });
 syncNowBtn.addEventListener("click", () => api.syncNow());
+reloginBtn.addEventListener("click", signInGoogle);
 $("ydiyr").addEventListener("click", () => {
   openUrl("https://your-data-is-your-responsibility.rei8t.dev").catch((err) => flash(t.openFailed(err)));
 });
