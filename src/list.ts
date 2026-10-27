@@ -325,8 +325,8 @@ autostart.addEventListener("change", async () => {
 syncAutostart();
 
 // ---------- 同步（Google / WebDAV 二选一） ----------
-const syncSwitch = $<HTMLInputElement>("sync-google");
-const davSwitch = $<HTMLInputElement>("sync-dav");
+const syncMode = $<HTMLSelectElement>("sync-mode");
+const googleOpt = syncMode.querySelector<HTMLOptionElement>('option[value="google"]') as HTMLOptionElement;
 const davForm = $<HTMLFormElement>("dav-form");
 const davUrl = $<HTMLInputElement>("dav-url");
 const davUser = $<HTMLInputElement>("dav-user");
@@ -342,12 +342,12 @@ function renderSync(st = syncSt) {
   syncSt = st;
   const on = st.signedIn || !!st.dav;
   const who = st.signedIn ? (st.email ?? "Google") : (st.dav ?? "WebDAV");
-  syncSwitch.disabled = !st.configured || signingIn || davChecking;
-  syncSwitch.checked = st.signedIn || signingIn;
-  davSwitch.disabled = signingIn || davChecking;
-  davSwitch.checked = !!st.dav || !davForm.hidden;
+  // 下拉框显示“正在用/正在设置”的那一种：填 WebDAV 表时优先显示 WebDAV
+  syncMode.value = !davForm.hidden ? "dav" : st.signedIn || signingIn ? "google" : st.dav ? "dav" : "off";
+  syncMode.disabled = signingIn || davChecking;
+  googleOpt.disabled = !st.configured;
   davSave.disabled = davChecking;
-  syncNowBtn.hidden = !on || st.busy;
+  syncNowBtn.hidden = !on || st.busy || !davForm.hidden;
   syncText.classList.toggle("err", !!st.error);
   syncText.textContent = signingIn
     ? t.syncWaiting
@@ -355,24 +355,35 @@ function renderSync(st = syncSt) {
       ? t.davChecking
       : st.error
         ? t.syncFailed(st.error)
-        : st.busy
-          ? t.syncBusy
-          : on
-            ? st.lastSync
-              ? t.syncLast(who, new Date(st.lastSync).toLocaleString(locale()))
-              : t.syncNever(who)
-            : st.configured
-              ? t.syncOff
-              : t.syncNotConfigured;
+        : !davForm.hidden
+          ? ""
+          : st.busy
+            ? t.syncBusy
+            : on
+              ? st.lastSync
+                ? t.syncLast(who, new Date(st.lastSync).toLocaleString(locale()))
+                : t.syncNever(who)
+              : st.configured
+                ? t.syncOff
+                : t.syncNotConfigured;
 }
 async function refreshSync() {
   try {
     renderSync(await api.syncStatus());
   } catch {}
 }
-syncSwitch.addEventListener("change", async () => {
-  if (syncSwitch.checked) {
-    davForm.hidden = true;
+syncMode.addEventListener("change", async () => {
+  const mode = syncMode.value;
+  if (mode === "dav") {
+    // 先填表，连上了才切过去（后端连上 WebDAV 时会退出 Google）
+    davForm.hidden = false;
+    renderSync();
+    davUrl.focus();
+    return;
+  }
+  davForm.hidden = true;
+  if (mode === "google") {
+    // 登录成功后端会自动断开 WebDAV；取消登录则保留原来的 WebDAV
     signingIn = true;
     renderSync();
     try {
@@ -384,22 +395,8 @@ syncSwitch.addEventListener("change", async () => {
       renderSync({ ...(syncSt as SyncStatus), signedIn: false, error: String(err) });
     }
   } else {
-    await api.syncSignOut().catch(() => {});
-    refreshSync();
-  }
-});
-davSwitch.addEventListener("change", async () => {
-  if (davSwitch.checked) {
-    // 先填表，连上了才算开
-    davForm.hidden = false;
-    renderSync();
-    davUrl.focus();
-  } else if (!davForm.hidden && !syncSt?.dav) {
-    davForm.hidden = true;
-    renderSync();
-  } else {
-    davForm.hidden = true;
-    await api.davDisconnect().catch(() => {});
+    if (syncSt?.signedIn) await api.syncSignOut().catch(() => {});
+    if (syncSt?.dav) await api.davDisconnect().catch(() => {});
     refreshSync();
   }
 });

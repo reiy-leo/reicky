@@ -38,13 +38,12 @@
         </div>
         <div class="set-group">
           <div class="set-label" data-i18n="general"></div>
-          <label class="set-row"><span data-i18n="language"></span><select id="lang-select" class="set-select"></select></label>
+          <label class="set-row"><span data-i18n="language"></span><span class="set-select-wrap"><select id="lang-select" class="set-select"></select></span></label>
           <label class="set-row"><span data-i18n="autostart"></span><input id="autostart" type="checkbox" class="switch" /></label>
         </div>
         <div class="set-group">
           <div class="set-label" data-i18n="syncSection"></div>
-          <label class="set-row"><span data-i18n="syncGoogle"></span><input id="sync-google" type="checkbox" class="switch" /></label>
-          <label class="set-row"><span data-i18n="syncDav"></span><input id="sync-dav" type="checkbox" class="switch" /></label>
+          <label class="set-row"><span data-i18n="syncMode"></span><span class="set-select-wrap"><select id="sync-mode" class="set-select"><option value="off" data-i18n="syncNone"></option><option value="google">Google Drive</option><option value="dav">WebDAV</option></select></span></label>
           <form id="dav-form" class="dav-form" hidden autocomplete="off">
             <input id="dav-url" type="text" spellcheck="false" data-i18n-placeholder="davUrl" required />
             <input id="dav-user" type="text" spellcheck="false" data-i18n-placeholder="davUser" />

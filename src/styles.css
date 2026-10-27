@@ -783,19 +783,48 @@ body.list-window .pane:not([hidden]) {
   text-decoration: underline;
   cursor: default;
 }
-.set-select {
-  height: 22px;
-  max-width: 150px;
-  padding: 0 4px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--seg);
-  color: var(--ink);
-  font: 12px var(--font);
-  outline: 0;
+/* 仿 macOS 系统设置的弹出按钮：无边框，右对齐文字 + 上下箭头（lucide chevrons-up-down），悬停才出底色 */
+.set-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
-.set-select:focus {
-  box-shadow: 0 0 0 2px rgba(0, 120, 255, 0.35);
+.set-select {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  max-width: 160px;
+  padding: 0 20px 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: 13px var(--font);
+  text-align: right;
+  text-align-last: right;
+  outline: 0;
+  cursor: default;
+}
+.set-select:hover {
+  background: var(--hover);
+}
+.set-select:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.4);
+}
+.set-select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  width: 11px;
+  height: 11px;
+  pointer-events: none;
+  background: var(--ink-soft);
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 .dav-form {
   display: flex;
