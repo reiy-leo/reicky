@@ -1,6 +1,6 @@
 [package]
 name = "reicky"
-version = "0.1.4"
+version = "0.1.5"
 description = "跨平台桌面便签"
 authors = ["Rei Leo"]
 license = "MIT"
