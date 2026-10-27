@@ -1,2 +1,3 @@
 - 2026-10-26 10cc451 WebDAV 同步（dav.rs，文件名带修改时间，和 Google 二选一）+ 设置页 ydiyr 跳转；Rust 未编译验证（沙箱 OOM）。
 - 2026-10-26 647ee76 界面 9 种语言，设置页语言下拉。
+- 2026-10-27 MCP：`reicky --mcp` stdio 服务（src-tauri/src/mcp.rs，8 个工具，无删除）；lib.rs watch_notes 1.5s 轮询 notes 目录刷新窗口；main.ts 补监听 current-replaced。服务器 clippy 零警告、协议实测通过。未发版。

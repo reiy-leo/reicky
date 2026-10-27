@@ -1,5 +1,6 @@
 mod dav;
 mod dbg;
+mod mcp;
 mod store;
 mod sync;
 
@@ -658,6 +659,63 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// `reicky --mcp`：不开窗口，跑 stdio MCP 服务
+pub fn mcp_main() {
+    mcp::serve()
+}
+
+/// 盯着 notes 目录：别的进程（`reicky --mcp`、手改文件）改了便签，就通知窗口刷新。
+/// 只比文件修改时间，1.5 秒一轮；应用自己写的也会触发，前端发现内容一样就不动。
+fn watch_notes(app: &AppHandle) {
+    use std::collections::HashMap;
+    use std::time::SystemTime;
+    let app = app.clone();
+    let dir = app.state::<AppState>().data_dir.join("notes");
+    let scan = move || -> HashMap<String, SystemTime> {
+        std::fs::read_dir(&dir)
+            .into_iter()
+            .flatten()
+            .filter_map(|e| e.ok())
+            .filter_map(|e| {
+                let name = e.file_name().into_string().ok()?;
+                let id = name.strip_suffix(".json")?.to_string();
+                Some((id, e.metadata().ok()?.modified().ok()?))
+            })
+            .collect()
+    };
+    let _ = std::thread::Builder::new()
+        .name("reicky-watch".into())
+        .spawn(move || {
+            let mut seen = scan();
+            loop {
+                std::thread::sleep(Duration::from_millis(1500));
+                let now = scan();
+                let changed: Vec<&String> = now
+                    .iter()
+                    .filter(|(id, t)| seen.get(*id) != Some(t))
+                    .map(|(id, _)| id)
+                    .collect();
+                if !changed.is_empty() {
+                    let st = app.state::<AppState>();
+                    let store = st.store.lock().unwrap();
+                    for id in changed {
+                        let Ok(n) = store.get(id) else { continue };
+                        broadcast(&app, &n);
+                        // 主便签在外面被归档了：和应用里归档一样，换一张新的
+                        if n.archived && store.is_current(id) {
+                            if let Ok(fresh) = store.new_current(Some(&n.color)) {
+                                let _ = app.emit("current-replaced", &fresh);
+                            }
+                        }
+                    }
+                    drop(store);
+                    let _ = app.emit("notes-synced", ());
+                }
+                seen = now;
+            }
+        });
+}
+
 pub fn run() {
     tauri::Builder::default()
         // 窗口状态只记位置/大小等，不恢复 decorations/可见性（旧版本存下的“有标题栏”会把新配置盖掉）
@@ -691,6 +749,7 @@ pub fn run() {
                 sync: Default::default(),
             });
             sync::start(app.handle());
+            watch_notes(app.handle());
             // 不在 Dock 显示（打包后 Info.plist 的 LSUIElement 也会生效，这里保证 dev 模式一致）
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

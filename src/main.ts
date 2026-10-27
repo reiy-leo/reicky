@@ -447,6 +447,10 @@ getCurrentWebview().onDragDropEvent(async (ev) => {
 listen<Note>("note-changed", (e) => {
   if (e.payload.id === note?.id) setNote(e.payload);
 });
+// 主便签在别处被归档（笔记列表、MCP）：主窗口换成新的空白便签
+listen<Note>("current-replaced", (e) => {
+  if (isMain && e.payload.id !== note?.id) setNote(e.payload, true);
+});
 
 // ---------- 渲染：窗口失焦时显示渲染结果，点一下回到编辑 ----------
 let renderOpts = loadRender();
