@@ -10,7 +10,7 @@ const zh: Dict = {
   unarchive: "恢复",
   list: "笔记列表",
   close: "关闭",
-  stow: "收起来（只关窗口，笔记原样保留）",
+  stow: "收起来",
   quit: "退出 reicky",
   newNote: "新建便签（⌘/Ctrl+N）",
   tabNotes: "笔记",

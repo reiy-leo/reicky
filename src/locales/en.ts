@@ -9,7 +9,7 @@ const en = {
   unarchive: "Restore",
   list: "Notes",
   close: "Close",
-  stow: "Tuck away (closes the window; the note stays as is)",
+  stow: "Tuck away",
   quit: "Quit reicky",
   newNote: "New note (⌘/Ctrl+N)",
   tabNotes: "Notes",

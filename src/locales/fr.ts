@@ -10,7 +10,7 @@ const fr: Dict = {
   unarchive: "Restaurer",
   list: "Notes",
   close: "Fermer",
-  stow: "Ranger (ferme la fenêtre, la note reste intacte)",
+  stow: "Ranger",
   quit: "Quitter reicky",
   newNote: "Nouvelle note (⌘/Ctrl+N)",
   tabNotes: "Notes",
