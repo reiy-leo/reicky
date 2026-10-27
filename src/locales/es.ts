@@ -85,6 +85,7 @@ const es: Dict = {
   mainNote: "Nota principal",
   isOpen: "Abierta",
   emptyArchived: "Aún no hay notas archivadas",
+  loadMore: "Cargar más",
   pinOn: "Siempre visible — clic para soltar",
   pinOff: "No fijada — clic para fijar encima",
   pinnedNow: "Fijada encima",

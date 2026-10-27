@@ -85,6 +85,7 @@ const fr: Dict = {
   mainNote: "Note principale",
   isOpen: "Ouverte",
   emptyArchived: "Pas encore de notes archivées",
+  loadMore: "Charger plus",
   pinOn: "Toujours au premier plan — cliquer pour détacher",
   pinOff: "Pas au premier plan — cliquer pour épingler",
   pinnedNow: "Épinglée au premier plan",

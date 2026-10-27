@@ -84,6 +84,7 @@ const en = {
   mainNote: "Main note",
   isOpen: "Open now",
   emptyArchived: "No archived notes yet",
+  loadMore: "Load more",
   pinOn: "Always on top — click to unpin",
   pinOff: "Not on top — click to pin",
   pinnedNow: "Pinned on top",

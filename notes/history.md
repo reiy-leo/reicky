@@ -2,3 +2,4 @@
 - 2026-10-26 647ee76 界面 9 种语言，设置页语言下拉。
 - 2026-10-27 MCP：`reicky --mcp` stdio 服务（src-tauri/src/mcp.rs，8 个工具，无删除）；lib.rs watch_notes 1.5s 轮询 notes 目录刷新窗口；main.ts 补监听 current-replaced。服务器 clippy 零警告、协议实测通过。未发版。
 - 2026-10-27 设置页下拉框改成 macOS 系统设置风格（无边框、右对齐、lucide chevrons-up-down）；同步两个开关合并成「同步方式」下拉：不同步 / Google Drive / WebDAV。
+- 2026-10-27 归档页改分页：默认最近归档 20 条（按 modified 倒序，归档时会更新 modified），底部「加载更多」每次 20 条，不再自动翻页；便签页仍是滚动加载。

@@ -85,6 +85,7 @@ const de: Dict = {
   mainNote: "Hauptnotiz",
   isOpen: "Gerade offen",
   emptyArchived: "Noch keine archivierten Notizen",
+  loadMore: "Mehr laden",
   pinOn: "Immer im Vordergrund – klicken zum Lösen",
   pinOff: "Nicht im Vordergrund – klicken zum Anheften",
   pinnedNow: "Im Vordergrund angeheftet",

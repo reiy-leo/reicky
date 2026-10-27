@@ -85,6 +85,7 @@ const id: Dict = {
   mainNote: "Catatan utama",
   isOpen: "Sedang terbuka",
   emptyArchived: "Belum ada catatan yang diarsipkan",
+  loadMore: "Muat lebih banyak",
   pinOn: "Selalu di atas — klik untuk melepas",
   pinOff: "Tidak di atas — klik untuk menyematkan",
   pinnedNow: "Disematkan di atas",

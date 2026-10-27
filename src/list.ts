@@ -24,6 +24,9 @@ function flash(msg: string) {
 }
 
 const PAGE = 30;
+/** 归档页不自动翻页：先给最近归档的 20 条，点「加载更多」再要 20 条 */
+const ARCHIVE_PAGE = 20;
+const loadMoreBtn = $<HTMLButtonElement>("load-more");
 let offset = 0;
 let hasMore = true;
 let loading = false;
@@ -133,10 +136,11 @@ function item(it: NoteSummary) {
 
 async function loadMore() {
   if (loading || !hasMore) return;
+  loadMoreBtn.hidden = true;
   loading = true;
   const my = gen;
   try {
-    const page = await api.list(offset, PAGE, showArchived, q.value, color);
+    const page = await api.list(offset, showArchived ? ARCHIVE_PAGE : PAGE, showArchived, q.value, color);
     if (my !== gen) return;
     offset += page.items.length;
     hasMore = page.hasMore;
@@ -154,6 +158,10 @@ async function loadMore() {
     loading = false;
   }
   if (my !== gen) return loadMore();
+  if (showArchived) {
+    loadMoreBtn.hidden = !hasMore;
+    return;
+  }
   // 一页没填满可视区时继续加载；要定位的条目还没出现也继续翻页
   if (hasMore && (focusId || sentinel.getBoundingClientRect().top < window.innerHeight)) loadMore();
   else if (!hasMore) focusId = undefined;
@@ -185,8 +193,11 @@ function reveal(id: string) {
   resetList();
 }
 
+loadMoreBtn.addEventListener("click", () => loadMore());
+
 function resetList() {
   gen++;
+  loadMoreBtn.hidden = true;
   listEl.replaceChildren();
   offset = 0;
   hasMore = true;
@@ -199,7 +210,7 @@ function resetList() {
 
 new IntersectionObserver(
   (es) => {
-    if (es.some((e) => e.isIntersecting)) loadMore();
+    if (!showArchived && es.some((e) => e.isIntersecting)) loadMore();
   },
   { root: listEl.parentElement },
 ).observe(sentinel);

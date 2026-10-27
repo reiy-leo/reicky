@@ -79,6 +79,7 @@ const zh: Dict = {
   mainNote: "主便签",
   isOpen: "正开着",
   emptyArchived: "还没有归档的笔记",
+  loadMore: "加载更多",
   pinOn: "已置顶，点击取消",
   pinOff: "未置顶，点击置顶",
   pinnedNow: "已置顶",

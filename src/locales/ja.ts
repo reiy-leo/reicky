@@ -85,6 +85,7 @@ const ja: Dict = {
   mainNote: "メインのメモ",
   isOpen: "開いています",
   emptyArchived: "アーカイブしたメモはまだありません",
+  loadMore: "さらに読み込む",
   pinOn: "最前面に固定中 — クリックで解除",
   pinOff: "固定していません — クリックで最前面に",
   pinnedNow: "最前面に固定しました",
