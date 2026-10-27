@@ -25,6 +25,7 @@
 
 /* 带 display 的类会盖掉浏览器默认的 [hidden]，统一兜底，hidden 就一定藏起来 */
 [hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: hidden 必须压过所有 display */
   display: none !important;
 }
 
