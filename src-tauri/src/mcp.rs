@@ -1,7 +1,7 @@
-//! MCP 服务（stdio）：`reicky --mcp` 启动，让 AI 客户端读写便签。
+//! MCP 服务（stdio）：`reicky --mcp` 启动，让 AI 客户端读写贴纸。
 //!
 //! 不开窗口，直接读写和应用同一个数据目录。应用开着时会在 1~2 秒内发现文件变化并刷新窗口
-//! （见 lib.rs 的 `watch_notes`）。和应用一样只归档、不删除；已归档的便签只读，要先恢复。
+//! （见 lib.rs 的 `watch_notes`）。和应用一样只归档、不删除；已归档的贴纸只读，要先恢复。
 //!
 //! 协议：每行一条 JSON-RPC 2.0 消息。只实现 initialize / ping / tools/list / tools/call。
 
@@ -73,7 +73,7 @@ fn handle(store: &Store, msg: &Value) -> Option<Value> {
                     "protocolVersion": ver,
                     "capabilities": { "tools": {} },
                     "serverInfo": { "name": "reicky", "version": env!("CARGO_PKG_VERSION") },
-                    "instructions": "reicky 是桌面便签。便签只能归档不能删除；已归档的便签只读，先 restore_note 才能改。",
+                    "instructions": "reicky 是桌面贴纸。贴纸只能归档不能删除；已归档的贴纸只读，先 restore_note 才能改。",
                 }),
             )
         }
@@ -100,12 +100,12 @@ fn handle(store: &Store, msg: &Value) -> Option<Value> {
 }
 
 fn tools() -> Value {
-    let id = json!({ "type": "string", "description": "便签 id" });
+    let id = json!({ "type": "string", "description": "贴纸 id" });
     let color = json!({ "type": "string", "enum": COLORS });
     json!([
         {
             "name": "list_notes",
-            "description": "按修改时间倒序列出便签，可按文字/路径搜索、按颜色筛选。返回每条的 id、颜色、首行摘要、修改时间。空白便签不列出。",
+            "description": "按修改时间倒序列出贴纸，可按文字/路径搜索、按颜色筛选。返回每条的 id、颜色、首行摘要、修改时间。空白贴纸不列出。",
             "inputSchema": { "type": "object", "properties": {
                 "query": { "type": "string", "description": "文字或路径包含（不分大小写）" },
                 "color": color,
@@ -116,12 +116,12 @@ fn tools() -> Value {
         },
         {
             "name": "get_note",
-            "description": "读一张便签的全文、颜色、拖入的路径和状态。",
+            "description": "读一张贴纸的全文、颜色、拖入的路径和状态。",
             "inputSchema": { "type": "object", "properties": { "id": id }, "required": ["id"] }
         },
         {
             "name": "create_note",
-            "description": "新建一张便签。应用开着时会出现在贴纸列表最上面。",
+            "description": "新建一张贴纸。应用开着时会出现在贴纸列表最上面。",
             "inputSchema": { "type": "object", "properties": {
                 "text": { "type": "string" },
                 "color": color
@@ -129,27 +129,27 @@ fn tools() -> Value {
         },
         {
             "name": "update_note",
-            "description": "用新文字整体替换一张便签的内容。",
+            "description": "用新文字整体替换一张贴纸的内容。",
             "inputSchema": { "type": "object", "properties": { "id": id, "text": { "type": "string" } }, "required": ["id", "text"] }
         },
         {
             "name": "append_note",
-            "description": "在便签末尾追加文字（自动换行）。",
+            "description": "在贴纸末尾追加文字（自动换行）。",
             "inputSchema": { "type": "object", "properties": { "id": id, "text": { "type": "string" } }, "required": ["id", "text"] }
         },
         {
             "name": "set_color",
-            "description": "改便签颜色。",
+            "description": "改贴纸颜色。",
             "inputSchema": { "type": "object", "properties": { "id": id, "color": color }, "required": ["id", "color"] }
         },
         {
             "name": "archive_note",
-            "description": "归档便签（reicky 没有删除，归档后只读，可恢复）。",
+            "description": "归档贴纸（reicky 没有删除，归档后只读，可恢复）。",
             "inputSchema": { "type": "object", "properties": { "id": id }, "required": ["id"] }
         },
         {
             "name": "restore_note",
-            "description": "把已归档的便签恢复成可编辑。",
+            "description": "把已归档的贴纸恢复成可编辑。",
             "inputSchema": { "type": "object", "properties": { "id": id }, "required": ["id"] }
         }
     ])
@@ -179,7 +179,7 @@ fn full(n: &Note) -> Value {
 /// 改之前确认没归档
 fn editable(store: &Store, id: &str) -> Result<(), String> {
     if store.get(id)?.archived {
-        return Err("这张便签已归档，只读。先用 restore_note 恢复。".into());
+        return Err("这张贴纸已归档，只读。先用 restore_note 恢复。".into());
     }
     Ok(())
 }

@@ -1,7 +1,7 @@
-//! WebDAV 同步：笔记存到用户自己 WebDAV 服务上的 `<地址>/reicky/` 目录。
+//! WebDAV 同步：贴纸存到用户自己 WebDAV 服务上的 `<地址>/reicky/` 目录。
 //!
-//! 每条笔记一个文件，文件名带修改时间：`reicky-<id>-<modified>.json`。
-//! 这样列一次目录（PROPFIND）就知道每条笔记远端的修改时间，不用额外的索引文件，
+//! 每条贴纸一个文件，文件名带修改时间：`reicky-<id>-<modified>.json`。
+//! 这样列一次目录（PROPFIND）就知道每条贴纸远端的修改时间，不用额外的索引文件，
 //! 两台设备同时写也不会互相覆盖索引。上传新版本后删掉旧文件；删失败也没关系，
 //! 下一轮按时间取最新的，再顺手清掉旧的。
 //!
@@ -183,7 +183,7 @@ impl Remote for Dav {
             .map_err(dav_err)?
             .into_string()
             .map_err(|e| e.to_string())?;
-        // 同一条笔记可能残留多个版本：取最新的，旧的记下来稍后删
+        // 同一条贴纸可能残留多个版本：取最新的，旧的记下来稍后删
         let mut best: HashMap<String, Entry> = HashMap::new();
         let mut seen = std::collections::HashSet::new();
         for (id, m, name) in names_in(&xml) {

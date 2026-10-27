@@ -1,5 +1,5 @@
-//! 本机存储：每条笔记一个 JSON 文件（`<app_data>/notes/<id>.json`），
-//! 写入先写临时文件再 rename，保证不会写坏。笔记只能归档，不提供删除。
+//! 本机存储：每条贴纸一个 JSON 文件（`<app_data>/notes/<id>.json`），
+//! 写入先写临时文件再 rename，保证不会写坏。贴纸只能归档，不提供删除。
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -40,7 +40,7 @@ pub struct NoteSummary {
     pub modified: u64,
     /// 是否已在某个窗口里开着（由 lib.rs 填）
     pub open: bool,
-    /// 是否是主便签那条（由 lib.rs 填）
+    /// 是否是主贴纸那条（由 lib.rs 填）
     pub main: bool,
 }
 
@@ -136,7 +136,7 @@ impl Store {
         Ok(note)
     }
 
-    /// 主编辑窗口显示的笔记：上次那条；不存在或已归档就新建一条。
+    /// 主编辑窗口显示的贴纸：上次那条；不存在或已归档就新建一条。
     pub fn current(&self) -> Result<Note, String> {
         let st = self.read_state();
         if let Some(id) = st.current_note_id.as_deref() {
@@ -157,7 +157,7 @@ impl Store {
         self.read_state().current_note_id.as_deref() == Some(id)
     }
 
-    /// 把主窗口换成一条新的空白笔记（归档当前笔记后调用）
+    /// 把主窗口换成一条新的空白贴纸（归档当前贴纸后调用）
     pub fn new_current(&self, color: Option<&str>) -> Result<Note, String> {
         let n = self.create(color)?;
         self.write_state(&State {
@@ -185,7 +185,7 @@ impl Store {
             .collect()
     }
 
-    /// 按 modified 倒序分页；空白且无路径的笔记不进列表。
+    /// 按 modified 倒序分页；空白且无路径的贴纸不进列表。
     /// query：文字或路径包含（不分大小写）；color：只看这个颜色。
     pub fn list(
         &self,

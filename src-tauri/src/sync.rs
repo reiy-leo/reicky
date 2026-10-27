@@ -1,7 +1,7 @@
 //! 同步：支持 Google Drive 和 WebDAV（见 dav.rs），两者二选一。合并逻辑两边共用（sync_once）。
 //!
-//! Google Drive：笔记存到用户 Drive 的 appDataFolder（应用私有、用户网盘里看不见），
-//! 每条笔记一个 `reicky-<id>.json`，appProperties.app=reicky 标记归属（appDataFolder 按 GCP 项目共享，可能和 navill 同一个），appProperties.modified 记修改时间。笔记不删除，所以合并就是
+//! Google Drive：贴纸存到用户 Drive 的 appDataFolder（应用私有、用户网盘里看不见），
+//! 每条贴纸一个 `reicky-<id>.json`，appProperties.app=reicky 标记归属（appDataFolder 按 GCP 项目共享，可能和 navill 同一个），appProperties.modified 记修改时间。贴纸不删除，所以合并就是
 //! 按 modified 取新：本地新就上传，远端新就下载。
 //!
 //! 登录走桌面端 OAuth：本机回环端口 + PKCE。客户端 ID/密钥编译时从环境变量
@@ -394,7 +394,7 @@ pub fn sign_out(app: &AppHandle) -> Res<()> {
 
 // ---------- 同步 ----------
 
-/// 远端的一条笔记
+/// 远端的一条贴纸
 pub(crate) struct Entry {
     pub id: String,
     pub modified: u64,
@@ -407,7 +407,7 @@ pub(crate) struct Entry {
 /// 远端存储：Google Drive 或 WebDAV
 pub(crate) trait Remote {
     fn list(&mut self) -> Res<Vec<Entry>>;
-    /// 上传笔记；prev 是远端已有的那份
+    /// 上传贴纸；prev 是远端已有的那份
     fn put(&mut self, note: &Note, prev: Option<&Entry>) -> Res<()>;
     fn get(&mut self, e: &Entry) -> Res<Note>;
 }
@@ -521,7 +521,7 @@ impl Remote for Drive {
     }
 }
 
-/// 合并：笔记不删除，所以按修改时间取新——本地新就上传，远端新就下载
+/// 合并：贴纸不删除，所以按修改时间取新——本地新就上传，远端新就下载
 fn merge(app: &AppHandle, remote: &mut dyn Remote) -> Res<()> {
     let st = app.state::<AppState>();
     let entries = remote.list()?;
@@ -536,7 +536,7 @@ fn merge(app: &AppHandle, remote: &mut dyn Remote) -> Res<()> {
     let by_id: HashMap<String, &Entry> = entries.iter().map(|e| (e.id.clone(), e)).collect();
     // 本地有：比修改时间
     for (id, n) in &local {
-        // 空白笔记不上传（主便签新建时就是空的）
+        // 空白贴纸不上传（主贴纸新建时就是空的）
         let blank = n.text.trim().is_empty() && n.paths.is_empty();
         match by_id.get(id).copied() {
             None if blank => {}

@@ -1,4 +1,4 @@
-// 便签渲染：笔记仍是纯文本，窗口失焦时按开关把链接 / 列表 / 待办渲染出来，点一下回到编辑。
+// 贴纸渲染：贴纸仍是纯文本，窗口失焦时按开关把链接 / 列表 / 待办渲染出来，点一下回到编辑。
 // 开关是全局的：存 localStorage reicky.render，在列表面板底部切换，并广播 Tauri 事件让所有窗口同步。
 import { emit, listen } from "@tauri-apps/api/event";
 export interface RenderOpts {

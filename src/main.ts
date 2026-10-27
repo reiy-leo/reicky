@@ -41,7 +41,7 @@ function applyTexts() {
   if (note) renderPaths();
 }
 
-// ---------- 渲染笔记 ----------
+// ---------- 渲染贴纸 ----------
 const ICON_DIR = '<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>';
 const ICON_FILE = '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5" /></svg>';
 
@@ -248,13 +248,13 @@ $("btn-archive").addEventListener("click", async () => {
   }
 });
 
-// ---------- 笔记列表：独立面板窗口，贴着这个便签弹出 ----------
+// ---------- 贴纸列表：独立面板窗口，贴着这个贴纸弹出 ----------
 $("btn-list").addEventListener("click", () => {
   flushSave();
   palette.hidden = true;
   api.showList().catch((err) => flash(t.openFailed(err)));
 });
-// 收起来：只关便签窗口，笔记原样保留（列表里的、已归档的都一样）；主窗口收起（从菜单栏图标再唤出，Rust 端拦截了 close）
+// 收起来：只关贴纸窗口，贴纸原样保留（列表里的、已归档的都一样）；主窗口收起（从菜单栏图标再唤出，Rust 端拦截了 close）
 $("btn-stow").addEventListener("click", () => {
   flushSave();
   hideTip();
@@ -356,7 +356,7 @@ async function enterBig() {
   bigOn = true;
   try {
     if (isMacUA) {
-      // mac 的便签窗口是 auxiliary/全空间，进不了原生全屏：直接铺满当前屏幕（窗口本就置顶）
+      // mac 的贴纸窗口是 auxiliary/全空间，进不了原生全屏：直接铺满当前屏幕（窗口本就置顶）
       const m = await currentMonitor();
       bigRestore = { pos: await win.outerPosition(), size: await win.outerSize() };
       if (m) {
@@ -447,7 +447,7 @@ getCurrentWebview().onDragDropEvent(async (ev) => {
 listen<Note>("note-changed", (e) => {
   if (e.payload.id === note?.id) setNote(e.payload);
 });
-// 主便签在别处被归档（笔记列表、MCP）：主窗口换成新的空白便签
+// 主贴纸在别处被归档（贴纸列表、MCP）：主窗口换成新的空白贴纸
 listen<Note>("current-replaced", (e) => {
   if (isMain && e.payload.id !== note?.id) setNote(e.payload, true);
 });

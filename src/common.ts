@@ -25,7 +25,7 @@ document.addEventListener(
       e.preventDefault();
       e.stopImmediatePropagation();
     } else if (mod && !e.altKey && !e.shiftKey && c === "KeyS") {
-      e.preventDefault(); // 挡掉 WebView 默认「保存网页」，便签窗口自己处理成「保存为文件」
+      e.preventDefault(); // 挡掉 WebView 默认「保存网页」，贴纸窗口自己处理成「保存为文件」
     }
   },
   { capture: true },

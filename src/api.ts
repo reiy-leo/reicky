@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-// 便签颜色：paper 纸面、edge 纸边（*Dark 为深色外观）、dot 列表色条 / 色块描边。Rust 端 store.rs COLORS 要同步。
+// 贴纸颜色：paper 纸面、edge 纸边（*Dark 为深色外观）、dot 列表色条 / 色块描边。Rust 端 store.rs COLORS 要同步。
 export const COLORS = [
   { id: "yellow", paper: "#fff7b1", edge: "#efe08a", dot: "#f2d64b", paperDark: "#534d2d", edgeDark: "#6b6231" },
   { id: "cream", paper: "#fbf1dc", edge: "#ecdcb8", dot: "#dcc08a", paperDark: "#4e483a", edgeDark: "#645a47" },
@@ -56,7 +56,7 @@ export interface NoteSummary {
   modified: number;
   /** 已在某个窗口开着 */
   open: boolean;
-  /** 主便签那条 */
+  /** 主贴纸那条 */
   main: boolean;
 }
 

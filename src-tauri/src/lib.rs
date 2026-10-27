@@ -25,7 +25,7 @@ const LIST_H: f64 = 480.0;
 
 type Res<T> = Result<T, String>;
 
-/// 通知所有窗口某条笔记变了（主窗口与独立小窗口可能显示同一条）
+/// 通知所有窗口某条贴纸变了（主窗口与独立小窗口可能显示同一条）
 fn broadcast(app: &AppHandle, note: &Note) {
     let _ = app.emit("note-changed", note);
 }
@@ -85,7 +85,7 @@ fn remove_path(app: AppHandle, state: State<AppState>, id: String, path: String)
     Ok(n)
 }
 
-/// 归档（唯一的“删除”方式）。若归档的是主窗口当前笔记，返回替代它的新空白笔记。
+/// 归档（唯一的“删除”方式）。若归档的是主窗口当前贴纸，返回替代它的新空白贴纸。
 #[tauri::command]
 fn archive_note(app: AppHandle, state: State<AppState>, id: String) -> Res<Option<Note>> {
     let store = state.store.lock().unwrap();
@@ -144,7 +144,7 @@ fn list_notes(
     Ok(page)
 }
 
-/// 便签窗口：始终置顶；macOS 上不进台前调度、跟随所有桌面空间、全屏应用上方也能看到，
+/// 贴纸窗口：始终置顶；macOS 上不进台前调度、跟随所有桌面空间、全屏应用上方也能看到，
 /// 并藏掉红绿灯（mac 用「透明标题栏 overlay」来保留原生圆角和阴影，所以要手动藏按钮）
 fn pin_window(w: &tauri::WebviewWindow) {
     let _ = w.set_always_on_top(true);
@@ -207,7 +207,7 @@ fn show_main(app: &AppHandle) {
 }
 
 fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<()> {
-    // 主便签那条在主窗口里，不另开
+    // 主贴纸那条在主窗口里，不另开
     if app.state::<AppState>().store.lock().unwrap().is_current(id) {
         show_main(app);
         return Ok(());
@@ -254,7 +254,7 @@ fn export_default_path(app: AppHandle, state: State<AppState>, id: String) -> Re
     Ok(path.to_string_lossy().into_owned())
 }
 
-/// ⌘/Ctrl+S 第二步：把笔记写成 UTF-8 文本到用户在保存框里选的路径（拖入的路径附在末尾）
+/// ⌘/Ctrl+S 第二步：把贴纸写成 UTF-8 文本到用户在保存框里选的路径（拖入的路径附在末尾）
 #[tauri::command]
 fn export_note(state: State<AppState>, id: String, path: String) -> Res<()> {
     let n = state.store.lock().unwrap().get(&id)?;
@@ -298,14 +298,14 @@ fn export_stem(text: &str) -> String {
     }
 }
 
-/// 在独立小窗口打开某条笔记；已开着就聚焦
+/// 在独立小窗口打开某条贴纸；已开着就聚焦
 #[tauri::command]
 // 建窗口必须用 async 命令，Windows 上同步命令里建窗口会死锁
 async fn open_note_window(app: AppHandle, id: String) -> Res<()> {
     build_note_window(&app, &id, None)
 }
 
-/// 新建一张便签并在独立小窗口打开，位置相对调用它的窗口错开一点，可连续开多个
+/// 新建一张贴纸并在独立小窗口打开，位置相对调用它的窗口错开一点，可连续开多个
 #[tauri::command]
 async fn new_note_window(
     app: AppHandle,
@@ -313,7 +313,7 @@ async fn new_note_window(
     state: State<'_, AppState>,
     color: Option<String>,
 ) -> Res<Note> {
-    // 不再沿用当前颜色：随机挑一个，避开正开着的便签已用的颜色（都用过了就挑用得最少的）
+    // 不再沿用当前颜色：随机挑一个，避开正开着的贴纸已用的颜色（都用过了就挑用得最少的）
     let _ = color;
     let store = state.store.lock().unwrap();
     let mut open_colors: Vec<String> = app
@@ -561,7 +561,7 @@ fn toggle_list_at_tray(app: &AppHandle, rect: tauri::Rect) {
     }
 }
 
-/// 便签底栏的列表按钮：面板贴着这个便签旁边弹出
+/// 贴纸底栏的列表按钮：面板贴着这个贴纸旁边弹出
 #[tauri::command]
 fn show_list(app: AppHandle, window: tauri::WebviewWindow) {
     let (Ok(p), Ok(s)) = (window.outer_position(), window.outer_size()) else {
@@ -585,7 +585,7 @@ fn show_list(app: AppHandle, window: tauri::WebviewWindow) {
     );
 }
 
-/// 列表里点「主便签」那条，或 Linux 托盘菜单
+/// 列表里点「主贴纸」那条，或 Linux 托盘菜单
 #[tauri::command]
 fn show_main_window(app: AppHandle) {
     show_main(&app);
@@ -664,7 +664,7 @@ pub fn mcp_main() {
     mcp::serve()
 }
 
-/// 盯着 notes 目录：别的进程（`reicky --mcp`、手改文件）改了便签，就通知窗口刷新。
+/// 盯着 notes 目录：别的进程（`reicky --mcp`、手改文件）改了贴纸，就通知窗口刷新。
 /// 只比文件修改时间，1.5 秒一轮；应用自己写的也会触发，前端发现内容一样就不动。
 fn watch_notes(app: &AppHandle) {
     use std::collections::HashMap;
@@ -701,7 +701,7 @@ fn watch_notes(app: &AppHandle) {
                     for id in changed {
                         let Ok(n) = store.get(id) else { continue };
                         broadcast(&app, &n);
-                        // 主便签在外面被归档了：和应用里归档一样，换一张新的
+                        // 主贴纸在外面被归档了：和应用里归档一样，换一张新的
                         if n.archived && store.is_current(id) {
                             if let Ok(fresh) = store.new_current(Some(&n.color)) {
                                 let _ = app.emit("current-replaced", &fresh);
@@ -726,7 +726,7 @@ pub fn run() {
                         & !tauri_plugin_window_state::StateFlags::DECORATIONS
                         & !tauri_plugin_window_state::StateFlags::VISIBLE,
                 )
-                // 列表面板每次跟着图标/便签定位，不记位置
+                // 列表面板每次跟着图标/贴纸定位，不记位置
                 .with_denylist(&["list"])
                 .build(),
         )

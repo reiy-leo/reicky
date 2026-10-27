@@ -11,7 +11,7 @@ export default defineConfig({
     target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
-    // 两个页面：便签窗口 index.html、列表面板 list.html
+    // 两个页面：贴纸窗口 index.html、列表面板 list.html
     rollupOptions: { input: { main: resolve(__dirname, "index.html"), list: resolve(__dirname, "list.html") } },
   },
 });

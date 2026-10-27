@@ -1,4 +1,4 @@
-// 笔记列表面板：独立窗口，从菜单栏图标下方或便签旁边弹出，失焦自动收起（Rust 端处理）
+// 贴纸列表面板：独立窗口，从菜单栏图标下方或贴纸旁边弹出，失焦自动收起（Rust 端处理）
 import { listen } from "@tauri-apps/api/event";
 import { disable as autostartOff, enable as autostartOn, isEnabled as autostartIsOn } from "@tauri-apps/plugin-autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -111,7 +111,7 @@ function item(it: NoteSummary) {
     run.catch((err) => flash(t.openFailed(err)));
   };
   if (it.archived) {
-    // 已归档：双击只读打开；行尾「恢复」→ 切回便签页并定位到它
+    // 已归档：双击只读打开；行尾「恢复」→ 切回贴纸页并定位到它
     li.addEventListener("dblclick", open);
     const r = document.createElement("button");
     r.className = "restore";
@@ -181,7 +181,7 @@ function highlight(id: string) {
   return true;
 }
 
-/** 切到「便签」页并定位到 id（清掉搜索和颜色筛选，免得它被筛掉） */
+/** 切到「贴纸」页并定位到 id（清掉搜索和颜色筛选，免得它被筛掉） */
 function reveal(id: string) {
   showArchived = false;
   q.value = "";
@@ -301,7 +301,7 @@ api
   })
   .catch(() => {});
 
-// ---------- 渲染开关（作用于所有便签窗口） ----------
+// ---------- 渲染开关（作用于所有贴纸窗口） ----------
 const toggles = document.querySelectorAll<HTMLInputElement>("[data-render]");
 function syncToggles(o: RenderOpts) {
   toggles.forEach((x) => {
@@ -445,7 +445,7 @@ $("ydiyr").addEventListener("click", () => {
   openUrl("https://your-data-is-your-responsibility.rei8t.dev").catch((err) => flash(t.openFailed(err)));
 });
 listen<SyncStatus>("sync-status", (e) => renderSync(e.payload));
-// 同步下载了笔记：列表开着就刷新
+// 同步下载了贴纸：列表开着就刷新
 listen("notes-synced", () => {
   if (!paneList.hidden) resetList();
 });
