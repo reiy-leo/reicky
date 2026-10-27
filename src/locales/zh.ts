@@ -11,7 +11,7 @@ const zh: Dict = {
   list: "笔记列表",
   close: "关闭",
   stow: "收起来",
-  quit: "退出 reicky",
+  quit: "退出灵气贴纸",
   newNote: "新建便签（⌘/Ctrl+N）",
   tabNotes: "笔记",
   tabArchived: "已归档",

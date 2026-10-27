@@ -1,6 +1,6 @@
-# reicky
+# 灵气贴纸 reicky
 
-介绍页：https://reicky.rei8t.dev
+中文名「灵气贴纸」，其他语言都叫 reicky。介绍页：https://reicky.rei8t.dev
 
 跨平台桌面便签（macOS / Windows / Linux），像 macOS Stickies：桌面上放一个小编辑器，随手贴文本、拖文件进来记路径。
 
