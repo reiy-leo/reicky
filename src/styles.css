@@ -23,6 +23,11 @@
   color-scheme: light;
 }
 
+/* 带 display 的类会盖掉浏览器默认的 [hidden]，统一兜底，hidden 就一定藏起来 */
+[hidden] {
+  display: none !important;
+}
+
 /* 深色外观：纸面颜色由 main.ts 换成 *Dark 版本，这里只管文字和界面件 */
 :root[data-theme="dark"] {
   --ink: #ecebe6;
