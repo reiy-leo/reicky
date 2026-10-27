@@ -8,7 +8,8 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const COLORS: &[&str] = &[
-    "yellow", "cream", "orange", "coral", "pink", "purple", "blue", "cyan", "mint", "green", "white", "gray",
+    "yellow", "cream", "orange", "coral", "pink", "purple", "blue", "cyan", "mint", "green",
+    "white", "gray",
 ];
 pub const DEFAULT_COLOR: &str = "yellow";
 
@@ -146,7 +147,9 @@ impl Store {
             }
         }
         let n = self.create(None)?;
-        self.write_state(&State { current_note_id: Some(n.id.clone()) })?;
+        self.write_state(&State {
+            current_note_id: Some(n.id.clone()),
+        })?;
         Ok(n)
     }
 
@@ -157,7 +160,9 @@ impl Store {
     /// 把主窗口换成一条新的空白笔记（归档当前笔记后调用）
     pub fn new_current(&self, color: Option<&str>) -> Result<Note, String> {
         let n = self.create(color)?;
-        self.write_state(&State { current_note_id: Some(n.id.clone()) })?;
+        self.write_state(&State {
+            current_note_id: Some(n.id.clone()),
+        })?;
         Ok(n)
     }
 
@@ -170,7 +175,9 @@ impl Store {
     }
 
     pub fn all(&self) -> Vec<Note> {
-        let Ok(rd) = fs::read_dir(self.root.join("notes")) else { return vec![] };
+        let Ok(rd) = fs::read_dir(self.root.join("notes")) else {
+            return vec![];
+        };
         rd.filter_map(|e| e.ok())
             .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("json"))
             .filter_map(|e| fs::read(e.path()).ok())
@@ -180,8 +187,17 @@ impl Store {
 
     /// 按 modified 倒序分页；空白且无路径的笔记不进列表。
     /// query：文字或路径包含（不分大小写）；color：只看这个颜色。
-    pub fn list(&self, offset: usize, limit: usize, archived: bool, query: Option<&str>, color: Option<&str>) -> Page {
-        let q = query.map(|q| q.trim().to_lowercase()).filter(|q| !q.is_empty());
+    pub fn list(
+        &self,
+        offset: usize,
+        limit: usize,
+        archived: bool,
+        query: Option<&str>,
+        color: Option<&str>,
+    ) -> Page {
+        let q = query
+            .map(|q| q.trim().to_lowercase())
+            .filter(|q| !q.is_empty());
         let mut v: Vec<Note> = self
             .all()
             .into_iter()
@@ -190,7 +206,8 @@ impl Store {
             .filter(|n| color.map_or(true, |c| n.color == c))
             .filter(|n| {
                 q.as_deref().map_or(true, |q| {
-                    n.text.to_lowercase().contains(q) || n.paths.iter().any(|p| p.to_lowercase().contains(q))
+                    n.text.to_lowercase().contains(q)
+                        || n.paths.iter().any(|p| p.to_lowercase().contains(q))
                 })
             })
             .collect();
@@ -257,11 +274,17 @@ mod tests {
         let a = s.create(Some("blue")).unwrap();
         s.update(&a.id, |n| n.text = "Hello World".into()).unwrap();
         let b = s.create(None).unwrap();
-        s.update(&b.id, |n| n.paths = vec!["/Users/rei/Report.pdf".into()]).unwrap();
+        s.update(&b.id, |n| n.paths = vec!["/Users/rei/Report.pdf".into()])
+            .unwrap();
         assert_eq!(s.list(0, 10, false, Some("hello"), None).items.len(), 1);
         assert_eq!(s.list(0, 10, false, Some("report"), None).items[0].id, b.id);
         assert_eq!(s.list(0, 10, false, None, Some("blue")).items[0].id, a.id);
-        assert_eq!(s.list(0, 10, false, Some("hello"), Some("yellow")).items.len(), 0);
+        assert_eq!(
+            s.list(0, 10, false, Some("hello"), Some("yellow"))
+                .items
+                .len(),
+            0
+        );
     }
 
     #[test]

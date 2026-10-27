@@ -33,7 +33,9 @@ const EVERY: Duration = Duration::from_secs(120);
 pub(crate) type Res<T> = Result<T, String>;
 
 fn client() -> Option<(String, String)> {
-    let id = std::env::var("REICKY_GOOGLE_CLIENT_ID").ok().or(option_env!("REICKY_GOOGLE_CLIENT_ID").map(String::from))?;
+    let id = std::env::var("REICKY_GOOGLE_CLIENT_ID")
+        .ok()
+        .or(option_env!("REICKY_GOOGLE_CLIENT_ID").map(String::from))?;
     let secret = std::env::var("REICKY_GOOGLE_CLIENT_SECRET")
         .ok()
         .or(option_env!("REICKY_GOOGLE_CLIENT_SECRET").map(String::from))
@@ -75,7 +77,10 @@ fn saved_path(dir: &Path) -> PathBuf {
     dir.join("google-sync.json")
 }
 fn load(dir: &Path) -> Saved {
-    std::fs::read(saved_path(dir)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default()
+    std::fs::read(saved_path(dir))
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_default()
 }
 fn save(dir: &Path, s: &Saved) -> Res<()> {
     let b = serde_json::to_vec_pretty(s).map_err(|e| e.to_string())?;
@@ -111,10 +116,18 @@ pub(crate) fn http_err(e: ureq::Error) -> String {
             let msg = serde_json::from_str::<serde_json::Value>(&body)
                 .ok()
                 .and_then(|v| {
-                    v["error_description"].as_str().or(v["error"]["message"].as_str()).or(v["error"].as_str()).map(String::from)
+                    v["error_description"]
+                        .as_str()
+                        .or(v["error"]["message"].as_str())
+                        .or(v["error"].as_str())
+                        .map(String::from)
                 })
                 .unwrap_or_default();
-            if msg.is_empty() { code_text(code) } else { format!("{}：{msg}", code_text(code)) }
+            if msg.is_empty() {
+                code_text(code)
+            } else {
+                format!("{}：{msg}", code_text(code))
+            }
         }
         ureq::Error::Transport(t) => format!("网络错误：{t}"),
     }
@@ -132,11 +145,18 @@ fn resolve(addr: &str) -> std::io::Result<Vec<std::net::SocketAddr>> {
         .spawn(move || {
             let _ = tx.send(a.to_socket_addrs().map(|i| i.collect::<Vec<_>>()));
         })?;
-    let r = rx
-        .recv_timeout(Duration::from_secs(5))
-        .unwrap_or_else(|_| Err(std::io::Error::new(std::io::ErrorKind::TimedOut, "DNS 解析超时")));
+    let r = rx.recv_timeout(Duration::from_secs(5)).unwrap_or_else(|_| {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            "DNS 解析超时",
+        ))
+    });
     if r.is_err() || t0.elapsed() > Duration::from_secs(1) {
-        crate::dlog!("sync: DNS {addr} 用时 {:?} 结果 {:?}", t0.elapsed(), r.as_ref().err());
+        crate::dlog!(
+            "sync: DNS {addr} 用时 {:?} 结果 {:?}",
+            t0.elapsed(),
+            r.as_ref().err()
+        );
     }
     r
 }
@@ -167,7 +187,11 @@ impl Sync {
             signed_in,
             email: s.email,
             dav: d.as_ref().map(crate::dav::label),
-            last_sync: if signed_in { s.last_sync } else { d.and_then(|d| d.last_sync) },
+            last_sync: if signed_in {
+                s.last_sync
+            } else {
+                d.and_then(|d| d.last_sync)
+            },
             busy: st.busy,
             error: st.error.clone(),
         }
@@ -194,11 +218,17 @@ impl Sync {
         let rt = load(dir).refresh_token.ok_or("还没登录 Google")?;
         let tok: Token = agent()
             .post(TOKEN_URL)
-            .send_form(&[("client_id", &id), ("client_secret", &secret), ("refresh_token", &rt), ("grant_type", "refresh_token")])
+            .send_form(&[
+                ("client_id", &id),
+                ("client_secret", &secret),
+                ("refresh_token", &rt),
+                ("grant_type", "refresh_token"),
+            ])
             .map_err(http_err)?
             .into_json()
             .map_err(|e| e.to_string())?;
-        let until = Instant::now() + Duration::from_secs(tok.expires_in.unwrap_or(3600).saturating_sub(120));
+        let until = Instant::now()
+            + Duration::from_secs(tok.expires_in.unwrap_or(3600).saturating_sub(120));
         *self.access.lock().unwrap() = Some((tok.access_token.clone(), until));
         Ok(tok.access_token)
     }
@@ -208,7 +238,9 @@ impl Sync {
 
 fn query_param(target: &str, key: &str) -> Option<String> {
     let u = url::Url::parse(&format!("http://localhost{target}")).ok()?;
-    u.query_pairs().find(|(k, _)| k == key).map(|(_, v)| v.into_owned())
+    u.query_pairs()
+        .find(|(k, _)| k == key)
+        .map(|(_, v)| v.into_owned())
 }
 
 /// 打开浏览器登录，等回调（最多 5 分钟），存下 refresh token 和邮箱
@@ -218,7 +250,11 @@ pub fn sign_in(app: &AppHandle) -> Res<()> {
     let listener = TcpListener::bind("127.0.0.1:0").map_err(|e| e.to_string())?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
     let redirect = format!("http://127.0.0.1:{port}");
-    let verifier = format!("{}{}", uuid::Uuid::new_v4().simple(), uuid::Uuid::new_v4().simple());
+    let verifier = format!(
+        "{}{}",
+        uuid::Uuid::new_v4().simple(),
+        uuid::Uuid::new_v4().simple()
+    );
     let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()));
     let state = uuid::Uuid::new_v4().simple().to_string();
     let mut auth = url::Url::parse(AUTH_URL).unwrap();
@@ -232,7 +268,9 @@ pub fn sign_in(app: &AppHandle) -> Res<()> {
         .append_pair("state", &state)
         .append_pair("access_type", "offline")
         .append_pair("prompt", "consent");
-    app.opener().open_url(auth.as_str(), None::<&str>).map_err(|e| e.to_string())?;
+    app.opener()
+        .open_url(auth.as_str(), None::<&str>)
+        .map_err(|e| e.to_string())?;
 
     listener.set_nonblocking(true).map_err(|e| e.to_string())?;
     let deadline = Instant::now() + Duration::from_secs(300);
@@ -252,11 +290,14 @@ pub fn sign_in(app: &AppHandle) -> Res<()> {
         let mut line = String::new();
         let _ = BufReader::new(&stream).read_line(&mut line);
         let target = line.split_whitespace().nth(1).unwrap_or("/").to_string();
-        let got = query_param(&target, "code").filter(|_| query_param(&target, "state").as_deref() == Some(state.as_str()));
+        let got = query_param(&target, "code")
+            .filter(|_| query_param(&target, "state").as_deref() == Some(state.as_str()));
         let err = query_param(&target, "error");
         if got.is_none() && err.is_none() {
             // 浏览器顺带请求的 /favicon.ico 之类
-            let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+            let _ = stream.write_all(
+                b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+            );
             continue;
         }
         let ok = got.is_some();
@@ -299,9 +340,17 @@ pub fn sign_in(app: &AppHandle) -> Res<()> {
         .and_then(|v| v["email"].as_str().map(String::from));
 
     let st = app.state::<AppState>();
-    let until = Instant::now() + Duration::from_secs(tok.expires_in.unwrap_or(3600).saturating_sub(120));
+    let until =
+        Instant::now() + Duration::from_secs(tok.expires_in.unwrap_or(3600).saturating_sub(120));
     *st.sync.access.lock().unwrap() = Some((tok.access_token, until));
-    save(&st.data_dir, &Saved { refresh_token: Some(rt), email, last_sync: None })?;
+    save(
+        &st.data_dir,
+        &Saved {
+            refresh_token: Some(rt),
+            email,
+            last_sync: None,
+        },
+    )?;
     // 两种同步二选一：登录 Google 就关掉 WebDAV
     crate::dav::remove(&st.data_dir);
     Ok(())
@@ -312,7 +361,9 @@ pub fn sign_out(app: &AppHandle) -> Res<()> {
     let _guard = st.sync.run.lock().unwrap();
     // 顺手吊销授权；失败也照样退出
     if let Some(rt) = load(&st.data_dir).refresh_token {
-        let _ = agent().post("https://oauth2.googleapis.com/revoke").send_form(&[("token", &rt)]);
+        let _ = agent()
+            .post("https://oauth2.googleapis.com/revoke")
+            .send_form(&[("token", &rt)]);
     }
     *st.sync.access.lock().unwrap() = None;
     let _ = std::fs::remove_file(saved_path(&st.data_dir));
@@ -371,17 +422,37 @@ impl Remote for Drive {
                 .set("Authorization", &format!("Bearer {}", self.token))
                 .query("spaces", "appDataFolder")
                 // appDataFolder 按 GCP 项目共享（和 navill 同项目），只看 reicky 自己的文件
-                .query("q", "appProperties has { key='app' and value='reicky' } and trashed = false")
+                .query(
+                    "q",
+                    "appProperties has { key='app' and value='reicky' } and trashed = false",
+                )
                 .query("pageSize", "1000")
                 .query("fields", "nextPageToken,files(id,name,appProperties)");
             if let Some(p) = &page {
                 req = req.query("pageToken", p);
             }
-            let l: FileList = req.call().map_err(http_err)?.into_json().map_err(|e| e.to_string())?;
+            let l: FileList = req
+                .call()
+                .map_err(http_err)?
+                .into_json()
+                .map_err(|e| e.to_string())?;
             for f in l.files {
-                if let Some(id) = f.name.strip_prefix("reicky-").and_then(|n| n.strip_suffix(".json")) {
-                    let modified = f.app_properties.get("modified").and_then(|m| m.parse::<u64>().ok()).unwrap_or(0);
-                    out.push(Entry { id: id.to_string(), modified, key: f.id, stale: vec![] });
+                if let Some(id) = f
+                    .name
+                    .strip_prefix("reicky-")
+                    .and_then(|n| n.strip_suffix(".json"))
+                {
+                    let modified = f
+                        .app_properties
+                        .get("modified")
+                        .and_then(|m| m.parse::<u64>().ok())
+                        .unwrap_or(0);
+                    out.push(Entry {
+                        id: id.to_string(),
+                        modified,
+                        key: f.id,
+                        stale: vec![],
+                    });
                 }
             }
             match l.next_page_token {
@@ -408,7 +479,10 @@ impl Remote for Drive {
         };
         req.query("uploadType", "multipart")
             .set("Authorization", &format!("Bearer {}", self.token))
-            .set("Content-Type", &format!("multipart/related; boundary={boundary}"))
+            .set(
+                "Content-Type",
+                &format!("multipart/related; boundary={boundary}"),
+            )
             .send_string(&body)
             .map_err(http_err)?;
         Ok(())
@@ -430,7 +504,14 @@ impl Remote for Drive {
 fn merge(app: &AppHandle, remote: &mut dyn Remote) -> Res<()> {
     let st = app.state::<AppState>();
     let entries = remote.list()?;
-    let local: HashMap<String, Note> = st.store.lock().unwrap().all().into_iter().map(|n| (n.id.clone(), n)).collect();
+    let local: HashMap<String, Note> = st
+        .store
+        .lock()
+        .unwrap()
+        .all()
+        .into_iter()
+        .map(|n| (n.id.clone(), n))
+        .collect();
     let by_id: HashMap<String, &Entry> = entries.iter().map(|e| (e.id.clone(), e)).collect();
     // 本地有：比修改时间
     for (id, n) in &local {
@@ -510,7 +591,11 @@ pub fn run(app: &AppHandle) {
     crate::dlog!("sync: 开始");
     st.sync.set(app, true, None);
     let r = sync_once(app);
-    crate::dlog!("sync: 结束 用时 {:?} 结果 {:?}", t0.elapsed(), r.as_ref().err());
+    crate::dlog!(
+        "sync: 结束 用时 {:?} 结果 {:?}",
+        t0.elapsed(),
+        r.as_ref().err()
+    );
     if r.is_err() {
         // access token 可能被吊销了，下次重新换
         *st.sync.access.lock().unwrap() = None;
@@ -551,11 +636,13 @@ pub fn dav_disconnect(app: &AppHandle) -> Res<()> {
 /// 启动后台定时同步
 pub fn start(app: &AppHandle) {
     let app = app.clone();
-    let _ = std::thread::Builder::new().name("reicky-sync".into()).spawn(move || {
-        std::thread::sleep(Duration::from_secs(5));
-        loop {
-            run(&app);
-            std::thread::sleep(EVERY);
-        }
-    });
+    let _ = std::thread::Builder::new()
+        .name("reicky-sync".into())
+        .spawn(move || {
+            std::thread::sleep(Duration::from_secs(5));
+            loop {
+                run(&app);
+                std::thread::sleep(EVERY);
+            }
+        });
 }

@@ -30,7 +30,10 @@ fn saved_path(dir: &Path) -> PathBuf {
     dir.join("webdav-sync.json")
 }
 pub fn load(dir: &Path) -> Option<Saved> {
-    std::fs::read(saved_path(dir)).ok().and_then(|b| serde_json::from_slice::<Saved>(&b).ok()).filter(|s| !s.url.is_empty())
+    std::fs::read(saved_path(dir))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<Saved>(&b).ok())
+        .filter(|s| !s.url.is_empty())
 }
 pub fn save(dir: &Path, s: &Saved) -> Res<()> {
     let b = serde_json::to_vec_pretty(s).map_err(|e| e.to_string())?;
@@ -42,8 +45,15 @@ pub fn remove(dir: &Path) {
 
 /// 状态栏里显示的账号：`用户名@主机`
 pub fn label(s: &Saved) -> String {
-    let host = url::Url::parse(&s.url).ok().and_then(|u| u.host_str().map(String::from)).unwrap_or_else(|| s.url.clone());
-    if s.user.is_empty() { host } else { format!("{}@{host}", s.user) }
+    let host = url::Url::parse(&s.url)
+        .ok()
+        .and_then(|u| u.host_str().map(String::from))
+        .unwrap_or_else(|| s.url.clone());
+    if s.user.is_empty() {
+        host
+    } else {
+        format!("{}@{host}", s.user)
+    }
 }
 
 pub struct Dav {
@@ -71,7 +81,13 @@ pub fn normalize(url: &str) -> Res<String> {
 impl Dav {
     pub fn new(s: &Saved) -> Res<Dav> {
         let root = normalize(&s.url)?;
-        Ok(Dav { base: format!("{root}{DIR}/"), auth: format!("Basic {}", STANDARD.encode(format!("{}:{}", s.user, s.password))) })
+        Ok(Dav {
+            base: format!("{root}{DIR}/"),
+            auth: format!(
+                "Basic {}",
+                STANDARD.encode(format!("{}:{}", s.user, s.password))
+            ),
+        })
     }
 
     fn propfind(&self, url: &str, depth: &str) -> Result<ureq::Response, ureq::Error> {
@@ -85,12 +101,20 @@ impl Dav {
 
     /// 检查账号能用，没有 reicky 目录就建一个
     pub fn check(&self) -> Res<()> {
-        let root = self.base.trim_end_matches('/').trim_end_matches(DIR).to_string();
+        let root = self
+            .base
+            .trim_end_matches('/')
+            .trim_end_matches(DIR)
+            .to_string();
         self.propfind(&root, "0").map_err(dav_err)?;
         match self.propfind(&self.base, "0") {
             Ok(_) => Ok(()),
             Err(ureq::Error::Status(404, _)) => {
-                match agent().request("MKCOL", &self.base).set("Authorization", &self.auth).call() {
+                match agent()
+                    .request("MKCOL", &self.base)
+                    .set("Authorization", &self.auth)
+                    .call()
+                {
                     // 405 方法不允许：多数服务器表示目录已存在
                     Ok(_) | Err(ureq::Error::Status(405, _)) => Ok(()),
                     Err(e) => Err(dav_err(e)),
@@ -101,7 +125,10 @@ impl Dav {
     }
 
     fn delete(&self, name: &str) {
-        let _ = agent().delete(&format!("{}{name}", self.base)).set("Authorization", &self.auth).call();
+        let _ = agent()
+            .delete(&format!("{}{name}", self.base))
+            .set("Authorization", &self.auth)
+            .call();
     }
 }
 
@@ -112,9 +139,14 @@ fn names_in(xml: &str) -> Vec<(String, u64, String)> {
     let mut rest = xml;
     while let Some(i) = rest.find("reicky-") {
         let tail = &rest[i..];
-        let end = tail.find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '.')).unwrap_or(tail.len());
+        let end = tail
+            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '.'))
+            .unwrap_or(tail.len());
         let name = &tail[..end];
-        if let Some(stem) = name.strip_prefix("reicky-").and_then(|n| n.strip_suffix(".json")) {
+        if let Some(stem) = name
+            .strip_prefix("reicky-")
+            .and_then(|n| n.strip_suffix(".json"))
+        {
             if let Some((id, m)) = stem.rsplit_once('-') {
                 if let Ok(m) = m.parse::<u64>() {
                     if !id.is_empty() {
@@ -145,7 +177,11 @@ fn dav_err(e: ureq::Error) -> String {
 
 impl Remote for Dav {
     fn list(&mut self) -> Res<Vec<Entry>> {
-        let xml = self.propfind(&self.base, "1").map_err(dav_err)?.into_string().map_err(|e| e.to_string())?;
+        let xml = self
+            .propfind(&self.base, "1")
+            .map_err(dav_err)?
+            .into_string()
+            .map_err(|e| e.to_string())?;
         // 同一条笔记可能残留多个版本：取最新的，旧的记下来稍后删
         let mut best: HashMap<String, Entry> = HashMap::new();
         let mut seen = std::collections::HashSet::new();
@@ -161,7 +197,15 @@ impl Remote for Dav {
                     e.modified = m;
                 }
                 None => {
-                    best.insert(id.clone(), Entry { id, modified: m, key: name, stale: vec![] });
+                    best.insert(
+                        id.clone(),
+                        Entry {
+                            id,
+                            modified: m,
+                            key: name,
+                            stale: vec![],
+                        },
+                    );
                 }
             }
         }
@@ -219,7 +263,10 @@ mod tests {
 
     #[test]
     fn normalize_url() {
-        assert_eq!(normalize("dav.example.com/remote.php/dav").unwrap(), "https://dav.example.com/remote.php/dav/");
+        assert_eq!(
+            normalize("dav.example.com/remote.php/dav").unwrap(),
+            "https://dav.example.com/remote.php/dav/"
+        );
         assert!(normalize("ftp://x").is_err());
     }
 }

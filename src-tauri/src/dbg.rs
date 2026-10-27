@@ -21,11 +21,18 @@ pub fn log(msg: impl AsRef<str>) {
     if std::fs::metadata(p).map_or(false, |m| m.len() > 512 * 1024) {
         let _ = std::fs::remove_file(p);
     }
-    let ms = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    let ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
     let th = std::thread::current();
     let name = th.name().unwrap_or("?").to_string();
     let line = format!("{ms} [{name}] {}\n", msg.as_ref());
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(p) {
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(p)
+    {
         let _ = f.write_all(line.as_bytes());
     }
     #[cfg(debug_assertions)]

@@ -1,6 +1,6 @@
+mod dav;
 mod dbg;
 mod store;
-mod dav;
 mod sync;
 
 use std::sync::Mutex;
@@ -51,7 +51,11 @@ fn set_color(app: AppHandle, state: State<AppState>, id: String, color: String) 
     if !COLORS.contains(&color.as_str()) {
         return Err(format!("不支持的颜色：{color}"));
     }
-    let n = state.store.lock().unwrap().update(&id, |n| n.color = color)?;
+    let n = state
+        .store
+        .lock()
+        .unwrap()
+        .update(&id, |n| n.color = color)?;
     broadcast(&app, &n);
     Ok(n)
 }
@@ -71,7 +75,11 @@ fn add_paths(app: AppHandle, state: State<AppState>, id: String, paths: Vec<Stri
 
 #[tauri::command]
 fn remove_path(app: AppHandle, state: State<AppState>, id: String, path: String) -> Res<Note> {
-    let n = state.store.lock().unwrap().update(&id, |n| n.paths.retain(|p| p != &path))?;
+    let n = state
+        .store
+        .lock()
+        .unwrap()
+        .update(&id, |n| n.paths.retain(|p| p != &path))?;
     broadcast(&app, &n);
     Ok(n)
 }
@@ -92,7 +100,11 @@ fn archive_note(app: AppHandle, state: State<AppState>, id: String) -> Res<Optio
 
 #[tauri::command]
 fn unarchive_note(app: AppHandle, state: State<AppState>, id: String) -> Res<Note> {
-    let n = state.store.lock().unwrap().update(&id, |n| n.archived = false)?;
+    let n = state
+        .store
+        .lock()
+        .unwrap()
+        .update(&id, |n| n.archived = false)?;
     broadcast(&app, &n);
     Ok(n)
 }
@@ -112,7 +124,13 @@ fn list_notes(
     if t0.elapsed() > Duration::from_millis(50) {
         dlog!("list_notes: 等 store 锁 {:?}", t0.elapsed());
     }
-    let mut page = store.list(offset, limit.min(100), archived, query.as_deref(), color.as_deref());
+    let mut page = store.list(
+        offset,
+        limit.min(100),
+        archived,
+        query.as_deref(),
+        color.as_deref(),
+    );
     let main_visible = app
         .get_webview_window("main")
         .and_then(|w| w.is_visible().ok())
@@ -148,7 +166,11 @@ fn pin_window(w: &tauri::WebviewWindow) {
             }
             unsafe {
                 let cur: usize = msg_send![ns, collectionBehavior];
-                let bits = (cur & !CLEAR) | CAN_JOIN_ALL_SPACES | STATIONARY | FULL_SCREEN_AUXILIARY | AUXILIARY;
+                let bits = (cur & !CLEAR)
+                    | CAN_JOIN_ALL_SPACES
+                    | STATIONARY
+                    | FULL_SCREEN_AUXILIARY
+                    | AUXILIARY;
                 let _: () = msg_send![ns, setCollectionBehavior: bits];
                 // NSWindowButton: close=0, miniaturize=1, zoom=2
                 for kind in 0usize..3 {
@@ -163,7 +185,9 @@ fn pin_window(w: &tauri::WebviewWindow) {
 }
 
 /// macOS：保留系统窗框但标题栏透明叠在内容上 → 原生圆角 + 阴影（红绿灯在 pin_window 里藏掉）；其他平台无边框
-fn chrome<'a, R: tauri::Runtime, M: Manager<R>>(b: WebviewWindowBuilder<'a, R, M>) -> WebviewWindowBuilder<'a, R, M> {
+fn chrome<'a, R: tauri::Runtime, M: Manager<R>>(
+    b: WebviewWindowBuilder<'a, R, M>,
+) -> WebviewWindowBuilder<'a, R, M> {
     #[cfg(target_os = "macos")]
     return b
         .decorations(true)
@@ -195,11 +219,15 @@ fn build_note_window(app: &AppHandle, id: &str, pos: Option<(f64, f64)>) -> Res<
         return Ok(());
     }
     let mut b = chrome(
-        WebviewWindowBuilder::new(app, label, WebviewUrl::App(format!("index.html?note={id}").into()))
-            .title("reicky")
-            .inner_size(300.0, 300.0)
-            .min_inner_size(220.0, 180.0)
-            .always_on_top(true),
+        WebviewWindowBuilder::new(
+            app,
+            label,
+            WebviewUrl::App(format!("index.html?note={id}").into()),
+        )
+        .title("reicky")
+        .inner_size(300.0, 300.0)
+        .min_inner_size(220.0, 180.0)
+        .always_on_top(true),
     );
     if let Some((x, y)) = pos {
         b = b.position(x, y);
@@ -244,15 +272,29 @@ fn export_note(state: State<AppState>, id: String, path: String) -> Res<()> {
 }
 
 fn export_stem(text: &str) -> String {
-    let first = text.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("");
+    let first = text
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .unwrap_or("");
     let cleaned: String = first
         .chars()
-        .map(|c| if "/\\:*?\"<>|".contains(c) || c.is_control() { ' ' } else { c })
+        .map(|c| {
+            if "/\\:*?\"<>|".contains(c) || c.is_control() {
+                ' '
+            } else {
+                c
+            }
+        })
         .collect();
     let cleaned: String = cleaned.split_whitespace().collect::<Vec<_>>().join(" ");
     let cleaned: String = cleaned.trim_matches('.').chars().take(40).collect();
     let cleaned = cleaned.trim().to_string();
-    if cleaned.is_empty() { "reicky note".into() } else { cleaned }
+    if cleaned.is_empty() {
+        "reicky note".into()
+    } else {
+        cleaned
+    }
 }
 
 /// 在独立小窗口打开某条笔记；已开着就聚焦
@@ -280,7 +322,11 @@ async fn new_note_window(
         .filter_map(|id| store.get(id).ok())
         .map(|n| n.color)
         .collect();
-    if app.get_webview_window("main").and_then(|w| w.is_visible().ok()).unwrap_or(false) {
+    if app
+        .get_webview_window("main")
+        .and_then(|w| w.is_visible().ok())
+        .unwrap_or(false)
+    {
         if let Ok(n) = store.current() {
             open_colors.push(n.color);
         }
@@ -308,7 +354,13 @@ fn pick_color(used: &[String], rnd: usize) -> &'static str {
 }
 
 /// 菜单栏图标样式：default = 原来的图标，其余是 lucide 图标
-const TRAY_STYLES: &[&str] = &["default", "layout-freeform", "layout-grid-circles", "waypoints", "bubbles"];
+const TRAY_STYLES: &[&str] = &[
+    "default",
+    "layout-freeform",
+    "layout-grid-circles",
+    "waypoints",
+    "bubbles",
+];
 const TRAY_FILE: &str = "tray-icon";
 
 macro_rules! tray_png {
@@ -358,7 +410,8 @@ fn set_tray_icon(app: AppHandle, state: State<AppState>, style: String) -> Res<(
         return Err(format!("未知图标样式：{style}"));
     }
     let tray = app.tray_by_id("main").ok_or("找不到菜单栏图标")?;
-    tray.set_icon(Some(tray_image(&style).map_err(|e| e.to_string())?)).map_err(|e| e.to_string())?;
+    tray.set_icon(Some(tray_image(&style).map_err(|e| e.to_string())?))
+        .map_err(|e| e.to_string())?;
     #[cfg(target_os = "macos")]
     tray.set_icon_as_template(true).map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&state.data_dir).map_err(|e| e.to_string())?;
@@ -390,12 +443,19 @@ async fn sync_sign_in(app: AppHandle) -> Res<sync::Status> {
 
 #[tauri::command]
 async fn sync_sign_out(app: AppHandle) -> Res<()> {
-    tauri::async_runtime::spawn_blocking(move || sync::sign_out(&app)).await.map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || sync::sign_out(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// 连上 WebDAV（检查通过才保存），成功后立刻同步一次
 #[tauri::command]
-async fn sync_dav_connect(app: AppHandle, url: String, user: String, password: String) -> Res<sync::Status> {
+async fn sync_dav_connect(
+    app: AppHandle,
+    url: String,
+    user: String,
+    password: String,
+) -> Res<sync::Status> {
     let a = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         sync::dav_connect(&a, &url, &user, &password)?;
@@ -410,12 +470,16 @@ async fn sync_dav_connect(app: AppHandle, url: String, user: String, password: S
 
 #[tauri::command]
 async fn sync_dav_disconnect(app: AppHandle) -> Res<()> {
-    tauri::async_runtime::spawn_blocking(move || sync::dav_disconnect(&app)).await.map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || sync::dav_disconnect(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
 async fn sync_now(app: AppHandle) -> Res<()> {
-    tauri::async_runtime::spawn_blocking(move || sync::run(&app)).await.map_err(|e| e.to_string())
+    tauri::async_runtime::spawn_blocking(move || sync::run(&app))
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -425,10 +489,15 @@ fn quit_app(app: AppHandle) {
 
 /// 把列表面板放到 (x, y) 附近并显示；位置夹在所在显示器的可用区域内
 fn place_list(app: &AppHandle, anchor: (f64, f64), below: bool) {
-    let Some(w) = app.get_webview_window("list") else { return };
+    let Some(w) = app.get_webview_window("list") else {
+        return;
+    };
     let sf = w.scale_factor().unwrap_or(1.0);
     let (lw, lh) = (LIST_W * sf, LIST_H * sf);
-    let (mut x, mut y) = (anchor.0 - lw / 2.0, if below { anchor.1 } else { anchor.1 - lh });
+    let (mut x, mut y) = (
+        anchor.0 - lw / 2.0,
+        if below { anchor.1 } else { anchor.1 - lh },
+    );
     let mon = app
         .monitor_from_point(anchor.0, anchor.1)
         .ok()
@@ -446,7 +515,13 @@ fn place_list(app: &AppHandle, anchor: (f64, f64), below: bool) {
     let r2 = w.show();
     let r3 = w.set_focus();
     let _ = w.emit("list-shown", ());
-    dlog!("list: 显示 ({x:.0},{y:.0}) pos={:?} show={:?} focus={:?} 用时 {:?}", r1.err(), r2.err(), r3.err(), t0.elapsed());
+    dlog!(
+        "list: 显示 ({x:.0},{y:.0}) pos={:?} show={:?} focus={:?} 用时 {:?}",
+        r1.err(),
+        r2.err(),
+        r3.err(),
+        t0.elapsed()
+    );
 }
 
 /// 菜单栏图标左键：列表面板从图标下方弹出（任务栏在底部时从上方弹出）；再点一下收起
@@ -477,7 +552,9 @@ fn toggle_list_at_tray(app: &AppHandle, rect: tauri::Rect) {
         .monitor_from_point(cx, p.y)
         .ok()
         .flatten()
-        .map_or(false, |m| p.y > (m.position().y as f64) + (m.size().height as f64) / 2.0);
+        .map_or(false, |m| {
+            p.y > (m.position().y as f64) + (m.size().height as f64) / 2.0
+        });
     if bottom_bar {
         place_list(app, (cx, p.y - 6.0), false);
     } else {
@@ -499,8 +576,14 @@ fn show_list(app: AppHandle, window: tauri::WebviewWindow) {
         .monitor_from_point(p.x as f64, p.y as f64)
         .ok()
         .flatten()
-        .map_or(true, |m| right + lw / 2.0 <= (m.position().x as f64) + (m.size().width as f64));
-    place_list(&app, (if fits_right { right } else { left }, p.y as f64), true);
+        .map_or(true, |m| {
+            right + lw / 2.0 <= (m.position().x as f64) + (m.size().width as f64)
+        });
+    place_list(
+        &app,
+        (if fits_right { right } else { left }, p.y as f64),
+        true,
+    );
 }
 
 /// 列表里点「主便签」那条，或 Linux 托盘菜单
@@ -535,7 +618,12 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
         .tooltip("reicky")
         .show_menu_on_left_click(false)
         .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click { button, button_state, .. } = &event {
+            if let TrayIconEvent::Click {
+                button,
+                button_state,
+                ..
+            } = &event
+            {
                 if !(*button == MouseButton::Left && *button_state == MouseButtonState::Up) {
                     dlog!("tray: 其他点击 {button:?} {button_state:?}");
                 }
@@ -590,12 +678,20 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         // 随系统启动：mac 用 LaunchAgent，Windows 注册表 Run，Linux ~/.config/autostart
-        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .setup(|app| {
             let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
             dbg::init(&dir);
             let store = Store::open(dir.clone())?;
-            app.manage(AppState { store: Mutex::new(store), data_dir: dir, list_hidden_at: Mutex::new(None), sync: Default::default() });
+            app.manage(AppState {
+                store: Mutex::new(store),
+                data_dir: dir,
+                list_hidden_at: Mutex::new(None),
+                sync: Default::default(),
+            });
             sync::start(app.handle());
             // 不在 Dock 显示（打包后 Info.plist 的 LSUIElement 也会生效，这里保证 dev 模式一致）
             #[cfg(target_os = "macos")]
@@ -609,7 +705,9 @@ pub fn run() {
         })
         .on_window_event(|window, event| match event {
             // 没有 Dock 图标：关主窗口只是收起；列表面板也只隐藏不销毁
-            WindowEvent::CloseRequested { api, .. } if matches!(window.label(), "main" | "list") => {
+            WindowEvent::CloseRequested { api, .. }
+                if matches!(window.label(), "main" | "list") =>
+            {
                 api.prevent_close();
                 let _ = window.hide();
             }
@@ -618,7 +716,12 @@ pub fn run() {
                 if window.is_visible().unwrap_or(false) {
                     dlog!("list: 失焦收起");
                     let _ = window.hide();
-                    *window.app_handle().state::<AppState>().list_hidden_at.lock().unwrap() = Some(Instant::now());
+                    *window
+                        .app_handle()
+                        .state::<AppState>()
+                        .list_hidden_at
+                        .lock()
+                        .unwrap() = Some(Instant::now());
                 }
             }
             _ => {}
