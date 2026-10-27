@@ -10,7 +10,7 @@ const id: Dict = {
   unarchive: "Pulihkan",
   list: "Catatan",
   close: "Tutup",
-  stow: "Simpan dulu (tetap ada di Catatan)",
+  stow: "Simpan dulu (hanya menutup jendela, catatan tetap utuh)",
   quit: "Keluar dari reicky",
   newNote: "Catatan baru (⌘/Ctrl+N)",
   tabNotes: "Catatan",

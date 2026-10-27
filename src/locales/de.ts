@@ -10,7 +10,7 @@ const de: Dict = {
   unarchive: "Wiederherstellen",
   list: "Notizen",
   close: "Schließen",
-  stow: "Wegpacken (bleibt in den Notizen)",
+  stow: "Wegpacken (schließt nur das Fenster, die Notiz bleibt unverändert)",
   quit: "reicky beenden",
   newNote: "Neue Notiz (⌘/Strg+N)",
   tabNotes: "Notizen",

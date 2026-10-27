@@ -10,7 +10,7 @@ const ja: Dict = {
   unarchive: "元に戻す",
   list: "メモ一覧",
   close: "閉じる",
-  stow: "しまう（一覧には残ります）",
+  stow: "しまう（ウィンドウを閉じるだけ。メモはそのまま）",
   quit: "reicky を終了",
   newNote: "新しいメモ（⌘/Ctrl+N）",
   tabNotes: "メモ",

@@ -254,7 +254,7 @@ $("btn-list").addEventListener("click", () => {
   palette.hidden = true;
   api.showList().catch((err) => flash(t.openFailed(err)));
 });
-// 收起来：便签窗口关掉、笔记留在列表里；主窗口收起（从菜单栏图标再唤出，Rust 端拦截了 close）
+// 收起来：只关便签窗口，笔记原样保留（列表里的、已归档的都一样）；主窗口收起（从菜单栏图标再唤出，Rust 端拦截了 close）
 $("btn-stow").addEventListener("click", () => {
   flushSave();
   hideTip();

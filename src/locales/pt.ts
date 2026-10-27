@@ -10,7 +10,7 @@ const pt: Dict = {
   unarchive: "Restaurar",
   list: "Notas",
   close: "Fechar",
-  stow: "Guardar (continua em Notas)",
+  stow: "Guardar (fecha a janela; a nota fica como está)",
   quit: "Sair do reicky",
   newNote: "Nova nota (⌘/Ctrl+N)",
   tabNotes: "Notas",
