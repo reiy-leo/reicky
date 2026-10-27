@@ -402,6 +402,8 @@ async function signInGoogle() {
 }
 syncMode.addEventListener("change", async () => {
   const mode = syncMode.value;
+  // 换了同步方式，上一种的报错就不再相关
+  if (syncSt) syncSt = { ...syncSt, error: null, relogin: false };
   if (mode === "dav") {
     // 先填表，连上了才切过去（后端连上 WebDAV 时会退出 Google）
     davForm.hidden = false;
