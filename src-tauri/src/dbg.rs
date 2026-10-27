@@ -18,7 +18,7 @@ pub fn init(dir: &std::path::Path) {
 pub fn log(msg: impl AsRef<str>) {
     let Some(p) = PATH.get() else { return };
     let _g = LOCK.lock().unwrap_or_else(|e| e.into_inner());
-    if std::fs::metadata(p).map_or(false, |m| m.len() > 512 * 1024) {
+    if std::fs::metadata(p).is_ok_and(|m| m.len() > 512 * 1024) {
         let _ = std::fs::remove_file(p);
     }
     let ms = SystemTime::now()

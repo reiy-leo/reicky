@@ -535,7 +535,7 @@ fn toggle_list_at_tray(app: &AppHandle, rect: tauri::Rect) {
         .list_hidden_at
         .lock()
         .unwrap()
-        .map_or(false, |t| t.elapsed() < Duration::from_millis(300));
+        .is_some_and(|t| t.elapsed() < Duration::from_millis(300));
     let visible = w.is_visible().unwrap_or(false);
     dlog!("tray: 点击 visible={visible} just_hidden={just_hidden}");
     if visible {
@@ -552,9 +552,7 @@ fn toggle_list_at_tray(app: &AppHandle, rect: tauri::Rect) {
         .monitor_from_point(cx, p.y)
         .ok()
         .flatten()
-        .map_or(false, |m| {
-            p.y > (m.position().y as f64) + (m.size().height as f64) / 2.0
-        });
+        .is_some_and(|m| p.y > (m.position().y as f64) + (m.size().height as f64) / 2.0);
     if bottom_bar {
         place_list(app, (cx, p.y - 6.0), false);
     } else {
@@ -712,17 +710,17 @@ pub fn run() {
                 let _ = window.hide();
             }
             // 列表面板像菜单栏弹出面板：点到别处就收起
-            WindowEvent::Focused(false) if window.label() == "list" => {
-                if window.is_visible().unwrap_or(false) {
-                    dlog!("list: 失焦收起");
-                    let _ = window.hide();
-                    *window
-                        .app_handle()
-                        .state::<AppState>()
-                        .list_hidden_at
-                        .lock()
-                        .unwrap() = Some(Instant::now());
-                }
+            WindowEvent::Focused(false)
+                if window.label() == "list" && window.is_visible().unwrap_or(false) =>
+            {
+                dlog!("list: 失焦收起");
+                let _ = window.hide();
+                *window
+                    .app_handle()
+                    .state::<AppState>()
+                    .list_hidden_at
+                    .lock()
+                    .unwrap() = Some(Instant::now());
             }
             _ => {}
         })

@@ -90,6 +90,7 @@ impl Dav {
         })
     }
 
+    #[allow(clippy::result_large_err)] // 只在本文件内部用，直接用 ureq::Error 就行
     fn propfind(&self, url: &str, depth: &str) -> Result<ureq::Response, ureq::Error> {
         agent()
             .request("PROPFIND", url)

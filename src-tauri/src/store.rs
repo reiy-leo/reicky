@@ -211,7 +211,7 @@ impl Store {
                 })
             })
             .collect();
-        v.sort_by(|a, b| b.modified.cmp(&a.modified));
+        v.sort_by_key(|a| std::cmp::Reverse(a.modified));
         let has_more = v.len() > offset + limit;
         let items = v
             .into_iter()
