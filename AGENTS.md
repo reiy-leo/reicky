@@ -1,5 +1,7 @@
 # AGENTS.md — reicky
 
+> **先读 [.agents/status.md](.agents/status.md)**：项目进度、没做完的事、代码地图都在那里。
+
 给在本仓库工作的 AI agent / 开发者看的总说明。产品细节见 [docs/PRODUCT.md](docs/PRODUCT.md)。
 
 ## 目标
@@ -7,7 +9,7 @@
 
 ## 边界（不做）
 - 不做移动端（iOS / Android）
-- 暂不做富文本、图片、Markdown 渲染（先只支持纯文本）
+- 不做富文本、图片；只存纯文本（失焦时可渲染链接、列表、待办，点回去还是原文）
 - 不复制拖入的文件，只存路径
 - **不提供删除贴纸**，只能归档 / 恢复
 
@@ -19,14 +21,23 @@
 
 ## 目录
 ```
-index.html            界面骨架（主窗口和贴纸小窗口共用；小窗口 URL 带 ?note=<id>）
-src/main.ts           交互：编辑自动保存、拖入路径、颜色、形状、归档、底部列表
-src/api.ts            调 Rust 命令的类型化封装
+index.html            贴纸窗口骨架（多窗口共用；小窗口 URL 带 ?note=<id>）
+list.html             列表面板 + 设置页骨架（窗口 label "list"）
+src/main.ts           贴纸窗口：编辑自动保存、拖入路径、底栏、全屏大字、保存文件
+src/list.ts           列表面板（贴纸 / 已归档、搜索、筛选）和设置页
+src/common.ts         tooltip、i18n 挂载、禁默认快捷键
+src/api.ts            调 Rust 命令的类型化封装，COLORS 表
 src/i18n.ts           语言检测与切换
 src/locales/*.ts      各语言文案（en.ts 定义 Dict 类型）
+src/render.ts         失焦渲染（链接、列表、待办）
+src/theme.ts          深浅色与纸色
 src/styles.css        贴纸颜色 × 平台观感（html[data-platform] / html[data-color]）
-src-tauri/src/lib.rs  Tauri 命令、窗口
+src-tauri/src/lib.rs  Tauri 命令、窗口、托盘、--mcp 分发
 src-tauri/src/store.rs 本机存储：<app_data>/notes/<id>.json + state.json，原子写
+src-tauri/src/sync.rs Google Drive 同步
+src-tauri/src/dav.rs  WebDAV 同步
+src-tauri/src/mcp.rs  MCP stdio 服务（reicky --mcp）
+src-tauri/src/dbg.rs  debug.log
 .github/workflows/    三平台打包
 .agents/              skills / rules / prompts / memory
 ```
@@ -58,5 +69,5 @@ cd src-tauri && cargo test     # 存储层单测
 
 ## 工作约定
 - 每轮对话完成后 commit 一次并 push 到 main
-- 不要自己打 `v*` tag 发版本（会触发三平台打包）；等 Rei 明确说「推版本」再打
+- 不要自己打 `v*` tag 发版本（会触发三平台打包）；等 Rei 明确说「发版 / 发布」再打
 - 产品决策变化同步更新 docs/PRODUCT.md；经验与坑写进 `.agents/memory/MEMORY.md`

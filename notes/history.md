@@ -1,3 +1,18 @@
+# reicky 开发历史（按时间，每次有改动或发版追加一行）
+- 2026-10-17 alpha.1 d744639 首次 CI 编译；alpha.2 c2f3a55 菜单栏应用（LSUIElement/Accessory，托盘左键开列表，无右键菜单，仅 Linux 兜底）；alpha.3 3fc2fd7 无标题栏；alpha.4 5201079 多便签窗口。
+- 7d3e2ef 始终置顶 + mac collectionBehavior auxiliary/stationary/canJoinAllSpaces/fullScreenAuxiliary（不进台前调度）。
+- 56253f7 底栏拷贝/粘贴（clipboard-manager）；颜色 12 种，表在 src/api.ts COLORS，Rust store.rs COLORS 要同步。b7e300a 奶油色纸堆图标。d7df305 全图标按钮 + 自绘 tooltip（data-tip）。88ef863 图钉置顶 localStorage reicky.pin.<label>。→ alpha.5
+- 035f172 mac decorations true + Overlay + hiddenTitle（tauri.macos.conf.json），objc 藏红绿灯；Win/Linux decorations false；window-state 排除 DECORATIONS/VISIBLE。3b627db 无关闭按钮，底栏「收起来」btn-stow。669c9e5 列表=独立窗口 "list"（list.html/src/list.ts），失焦隐藏，搜索/颜色筛选；src/common.ts 公共；新建随机色 pick_color。1a5d217 路径小标签。→ alpha.6
+- 9e9bc3b 深浅色 src/theme.ts（reicky.theme，paperOf(id,isDark)，CSS 变量）。9409f55 图标居中。a1640e3 渲染开关 src/render.ts（链接/列表/待办，失焦显示 #view），归档只读，跨窗口同步用 Tauri 事件。→ alpha.7
+- ea69f59 设置页 #pane-settings + 菜单栏图标样式（src-tauri/icons/tray/<name>-black|white.png，get/set_tray_icon）。→ alpha.8
+- 8e21a79/fc3a338 列表时间戳靠右、整行纸色。e44c2ff 禁右键菜单和 devtools/刷新/查找等快捷键（mac 只看 ⌘）。b335a63 列表单行、圆角方块色块、随系统启动（autostart）。b13eaba Google Drive 同步 sync.rs（回环+PKCE，drive.appdata，google-sync.json，每 2 分钟，docs/GOOGLE_SYNC.md）。→ alpha.9
+- 0f69590 列表底栏笔记/已归档切换 + 新建按钮。d0fc0a9 同步隔离（reicky-<id>.json，appProperties app=reicky，q 过滤），因与 navill 共用 GCP 项目 71336458400；Reicky 用独立 Desktop OAuth client，Rei 本地登录成功。→ v0.1.0
+- 2026-10-20 03d3a84/9c86cf0 ⌘/Ctrl+S 系统保存框（tauri-plugin-dialog；export_default_path 默认 下载/首行.txt；export_note(id,path)；弹框期间临时取消置顶）。aa1c577 全屏大字 #big（⌘/Ctrl+L 或 btn-big，选中优先，二分字号，mac 铺满当前屏，其他 setFullscreen）。949528d/8652c70 收起来图标改 lucide hard-drive-download。
+- 2026-10-21 v0.1.1（d1fa69d）发布，含上一条全部；dialog 插件首次 CI 编译，结果待反馈。
+- 2026-10-24 6512349（未发版）：排查「断网后点菜单栏不弹列表」。代码审查没找到同步跨网络持锁；加 src-tauri/src/dbg.rs（dlog! → app_data/debug.log），记录托盘点击/列表显示/失焦收起/同步起止/DNS；ureq 加 DNS 5s 超时 resolver + connect 8s。沙箱 cargo check 两次被 OOM/重置杀掉，未编译验证；请 Rei 本地 app:dev 复现后发 debug.log（mac: ~/Library/Application Support/<identifier>/debug.log）。
+- 2026-10-25 8875236（未发版）：编辑区和预览断行改为 break-all + line-break:anywhere，长串不再在 - 处提前折行。
+- 2026-10-25 8887201（未发版）：归档页双击只读打开；恢复按钮移到行尾、hover 下划线；恢复后切回便签页（清搜索/颜色筛选）、滚到该条并闪一下高亮。
+- 2026-10-25 2be8453 发布 v0.1.2（Rei 明确要求）：含 6512349/8875236/8887201；6512349 的 Rust 改动沙箱未编译过，CI 是首次编译。
 - 2026-10-26 10cc451 WebDAV 同步（dav.rs，文件名带修改时间，和 Google 二选一）+ 设置页 ydiyr 跳转；Rust 未编译验证（沙箱 OOM）。
 - 2026-10-26 647ee76 界面 9 种语言，设置页语言下拉。
 - 2026-10-27 MCP：`reicky --mcp` stdio 服务（src-tauri/src/mcp.rs，8 个工具，无删除）；lib.rs watch_notes 1.5s 轮询 notes 目录刷新窗口；main.ts 补监听 current-replaced。服务器 clippy 零警告、协议实测通过。未发版。
@@ -5,3 +20,12 @@
 - 2026-10-27 归档页改分页：默认最近归档 20 条（按 modified 倒序，归档时会更新 modified），底部「加载更多」每次 20 条，不再自动翻页；便签页仍是滚动加载。
 - 2026-10-27 修复：.dav-form 等 display 规则盖掉 [hidden]，WebDAV 表单连上后仍显示；加全局 [hidden]{display:none!important}。
 - 2026-10-27 修复：capability 只有 opener:allow-open-url 没有 URL 范围，打开网址全被拒（ydiyr 卡片、便签里的链接）；加 opener:allow-default-urls，失败时提示。
+- a9669d7（未发版）：Google 403 insufficient scopes / invalid_grant / 401 时设置页显示「重新登录」；登录时 scope 缺 drive.appdata 就吊销并报错。LightVela clippy 通过。
+- 48e992d（未发版）：切换同步方式时前端清掉上一种的报错。
+- 170b571（未发版）：「收起来」tooltip 改为「收起来（只关窗口，笔记原样保留）」，9 种语言。
+- a898e3a（未发版）：「收起来」tooltip 去掉括号说明，只留「收起来」。
+- 2026-10-27 发布 v0.1.5（09c1a67，CI run 40445206191 成功，7 个包）：Google 重新登录、drive.appdata 勾选检查、切换同步方式清报错、收起来提示精简。Mac 已装 0.1.5。
+- 2026-10-28 介绍页 reicky.rei8t.dev 上线（独立仓库 reiy-leo/reicky-web，本项目目录 reicky-web/）；reicky README 和仓库主页指向它。
+- 2026-10-28 中文名定为「灵气贴纸」（其他语言仍叫 reicky）：介绍页 brand 字段、应用 zh 退出菜单、README 已改（未发版）。
+- 2026-10-28 中文界面「笔记」→「贴纸」（a3682cf，未发版）；介绍页同步（790154b）。
+- 2026-10-28 中文统一叫「贴纸」，去掉「便签」「笔记」（6d677c9，未发版）；介绍页 592bc76。

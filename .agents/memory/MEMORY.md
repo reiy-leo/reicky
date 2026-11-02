@@ -8,3 +8,7 @@
 
 ## 坑
 - macOS 10.15 的 WebView 是 Safari 13：前端构建 target 用 safari13。
+- 沙箱里跑 tauri 的 cargo check / build 会 OOM 并重置沙箱；Rust 检查去 LightVela 服务器跑（见 .agents/status.md 第 5 节）。
+- 2026-10-27 `.dav-form` 等元素的 display 规则盖掉了 `[hidden]`：全局加 `[hidden]{display:none!important}`。
+- 2026-10-27 opener 只有 `allow-open-url` 没有 URL 范围时打开网址全被拒，要加 `opener:allow-default-urls`。
+
