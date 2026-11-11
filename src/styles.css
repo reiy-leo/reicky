@@ -1005,3 +1005,39 @@ body.list-window .pane:not([hidden]) {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* 全局快捷键：录键按钮 + 恢复默认 */
+.hotkey-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.hotkey-btn {
+  min-width: 64px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: default;
+}
+.hotkey-btn:hover {
+  background: var(--hover);
+}
+.hotkey-btn.recording {
+  border-color: rgba(0, 122, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25);
+  color: var(--ink-soft);
+}
+.icon-btn:disabled {
+  opacity: 0.35;
+  background: transparent;
+}
+.hotkey-note {
+  font-size: 11px;
+  color: #d70015;
+  margin-top: 2px;
+}

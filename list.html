@@ -32,6 +32,19 @@
       </header>
       <div class="set-body">
         <div class="set-group">
+          <div class="set-label" data-i18n="hotkeySection"></div>
+          <div class="set-row">
+            <span data-i18n="hotkeyNew"></span>
+            <span class="hotkey-wrap">
+              <button id="hotkey" class="hotkey-btn" type="button" data-i18n-title="hotkeyChange"></button>
+              <button id="hotkey-reset" class="icon-btn" type="button" data-i18n-title="hotkeyReset">
+                <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+              </button>
+            </span>
+          </div>
+          <div id="hotkey-note" class="hotkey-note" hidden></div>
+        </div>
+        <div class="set-group">
           <div class="set-label" data-i18n="renderSection"></div>
           <label class="set-row"><span data-i18n="renderLinks"></span><input type="checkbox" class="switch" data-render="links" /></label>
           <label class="set-row"><span data-i18n="renderLists"></span><input type="checkbox" class="switch" data-render="lists" /></label>

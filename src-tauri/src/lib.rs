@@ -1,5 +1,6 @@
 mod dav;
 mod dbg;
+mod hotkey;
 mod mcp;
 mod store;
 mod sync;
@@ -313,8 +314,22 @@ async fn new_note_window(
     state: State<'_, AppState>,
     color: Option<String>,
 ) -> Res<Note> {
-    // 不再沿用当前颜色：随机挑一个，避开正开着的贴纸已用的颜色（都用过了就挑用得最少的）
+    // 不再沿用当前颜色：随机挑一个，避开正开着的贴纸已用的颜色
     let _ = color;
+    let n = create_note(&app, &state)?;
+    let pos = match (window.outer_position(), window.scale_factor()) {
+        (Ok(p), Ok(sf)) => {
+            let p = p.to_logical::<f64>(sf);
+            Some((p.x + 28.0, p.y + 28.0))
+        }
+        _ => None,
+    };
+    build_note_window(&app, &n.id, pos)?;
+    Ok(n)
+}
+
+/// 新建一张贴纸：随机挑颜色，避开正开着的贴纸已用的颜色（都用过了就挑用得最少的）
+fn create_note(app: &AppHandle, state: &AppState) -> Res<Note> {
     let store = state.store.lock().unwrap();
     let mut open_colors: Vec<String> = app
         .webview_windows()
@@ -333,17 +348,51 @@ async fn new_note_window(
         }
     }
     let pick = pick_color(&open_colors, uuid::Uuid::new_v4().as_bytes()[0] as usize);
-    let n = store.create(Some(pick))?;
-    drop(store);
-    let pos = match (window.outer_position(), window.scale_factor()) {
-        (Ok(p), Ok(sf)) => {
-            let p = p.to_logical::<f64>(sf);
-            Some((p.x + 28.0, p.y + 28.0))
-        }
-        _ => None,
-    };
-    build_note_window(&app, &n.id, pos)?;
-    Ok(n)
+    store.create(Some(pick))
+}
+
+/// 全局快捷键：新建一张贴纸，窗口放在系统默认位置
+fn hotkey_new_note(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let r = create_note(app, &state).and_then(|n| build_note_window(app, &n.id, None));
+    if let Err(e) = r {
+        dlog!("hotkey: 新建贴纸失败：{e}");
+    }
+}
+
+#[derive(serde::Serialize)]
+struct HotkeyInfo {
+    /// 当前组合，如 Control+Alt+Minus
+    accel: String,
+    default: &'static str,
+    /// 有没有注册上（被别的应用占了就是 false）
+    active: bool,
+}
+
+fn hotkey_info(app: &AppHandle, dir: &std::path::Path) -> HotkeyInfo {
+    HotkeyInfo {
+        accel: hotkey::saved(dir),
+        default: hotkey::DEFAULT,
+        active: hotkey::active(app, dir),
+    }
+}
+
+// 快捷键的注册/注销要回主线程执行并等结果，命令都用 async，不占着主线程等自己
+#[tauri::command]
+async fn get_hotkey(app: AppHandle, state: State<'_, AppState>) -> Res<HotkeyInfo> {
+    Ok(hotkey_info(&app, &state.data_dir))
+}
+
+#[tauri::command]
+async fn set_hotkey(app: AppHandle, state: State<'_, AppState>, accel: String) -> Res<HotkeyInfo> {
+    hotkey::set(&app, &state.data_dir, &accel)?;
+    Ok(hotkey_info(&app, &state.data_dir))
+}
+
+#[tauri::command]
+async fn suspend_hotkey(app: AppHandle, state: State<'_, AppState>, on: bool) -> Res<()> {
+    hotkey::suspend(&app, &state.data_dir, on);
+    Ok(())
 }
 
 /// 在用得最少的颜色里随机挑一个（没开着的颜色优先）
@@ -738,6 +787,17 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
+        // 全局快捷键只有一个：按下（不管松开）就新建贴纸；建窗口放到异步任务里，避免 Windows 上死锁
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        let app = app.clone();
+                        tauri::async_runtime::spawn(async move { hotkey_new_note(&app) });
+                    }
+                })
+                .build(),
+        )
         .setup(|app| {
             let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
             dbg::init(&dir);
@@ -755,6 +815,8 @@ pub fn run() {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             build_list_window(app)?;
             setup_tray(app)?;
+            let dir = app.state::<AppState>().data_dir.clone();
+            hotkey::register_saved(app.handle(), &dir);
             if let Some(w) = app.get_webview_window("main") {
                 pin_window(&w);
             }
@@ -799,6 +861,9 @@ pub fn run() {
             show_main_window,
             get_tray_icon,
             set_tray_icon,
+            get_hotkey,
+            set_hotkey,
+            suspend_hotkey,
             sync_status,
             sync_sign_in,
             sync_sign_out,

@@ -65,6 +65,13 @@ export interface Page {
   hasMore: boolean;
 }
 
+/** 全局快捷键（新建贴纸），accel 形如 Control+Alt+Minus */
+export interface HotkeyInfo {
+  accel: string;
+  default: string;
+  active: boolean;
+}
+
 export const api = {
   newNote: (color: Color) => invoke<Note>("new_note_window", { color }),
   quit: () => invoke<void>("quit_app"),
@@ -76,6 +83,9 @@ export const api = {
   davDisconnect: () => invoke<void>("sync_dav_disconnect"),
   getTrayIcon: () => invoke<string>("get_tray_icon"),
   setTrayIcon: (style: string) => invoke<void>("set_tray_icon", { style }),
+  getHotkey: () => invoke<HotkeyInfo>("get_hotkey"),
+  setHotkey: (accel: string) => invoke<HotkeyInfo>("set_hotkey", { accel }),
+  suspendHotkey: (on: boolean) => invoke<void>("suspend_hotkey", { on }),
   exportDefaultPath: (id: string) => invoke<string>("export_default_path", { id }),
   exportNote: (id: string, path: string) => invoke<void>("export_note", { id, path }),
   current: () => invoke<Note>("get_current_note"),

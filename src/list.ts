@@ -3,7 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { disable as autostartOff, enable as autostartOn, isEnabled as autostartIsOn } from "@tauri-apps/plugin-autostart";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { api, COLORS, paperOf, type Color, type NoteSummary, type SyncStatus } from "./api";
+import { api, COLORS, paperOf, type Color, type HotkeyInfo, type NoteSummary, type SyncStatus } from "./api";
 import { isDark, onThemeChange } from "./theme";
 import { loadRender, onRenderChange, saveRender, type RenderOpts } from "./render";
 import { broadcastLang, LANG_NAMES, LANGS, langPref, locale, onLangChange, setLang, t, type LangPref } from "./i18n";
@@ -253,6 +253,139 @@ function showSettings(on: boolean) {
 }
 btnSettings.addEventListener("click", () => showSettings(paneSettings.hidden));
 $("btn-back").addEventListener("click", () => showSettings(false));
+
+// ---------- 全局快捷键：新建贴纸。点按钮开始录，按下新组合就保存，Esc 取消 ----------
+const hkBtn = $<HTMLButtonElement>("hotkey");
+const hkReset = $<HTMLButtonElement>("hotkey-reset");
+const hkNote = $("hotkey-note");
+const onMac = document.documentElement.dataset.platform === "mac";
+const onWin = document.documentElement.dataset.platform === "windows";
+let hk: HotkeyInfo | null = null;
+let recording = false;
+let hkErr = ""; // 上一次设置失败的原因，下次点按钮前一直显示
+const MOD_ORDER = ["Control", "Alt", "Shift", "Super"] as const;
+const MOD_MAC: Record<string, string> = { Control: "⌃", Alt: "⌥", Shift: "⇧", Super: "⌘" };
+const MOD_PC: Record<string, string> = { Control: "Ctrl", Alt: "Alt", Shift: "Shift", Super: onWin ? "Win" : "Super" };
+// 主键：按物理键位（e.code）记，和输入法、键盘布局无关
+const KEY_LABEL: Record<string, string> = {
+  Minus: "-",
+  Equal: "=",
+  BracketLeft: "[",
+  BracketRight: "]",
+  Backslash: "\\",
+  Semicolon: ";",
+  Quote: "'",
+  Comma: ",",
+  Period: ".",
+  Slash: "/",
+  Backquote: "`",
+  Space: "Space",
+  Enter: "↩",
+  Tab: "⇥",
+  Backspace: "⌫",
+  Delete: "⌦",
+  Home: "Home",
+  End: "End",
+  PageUp: "PgUp",
+  PageDown: "PgDn",
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+};
+function keyLabel(code: string) {
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+  if (/^Digit\d$/.test(code)) return code.slice(5);
+  return KEY_LABEL[code] ?? code;
+}
+function validKey(code: string) {
+  return /^(Key[A-Z]|Digit\d|F([1-9]|1\d|2[0-4]))$/.test(code) || code in KEY_LABEL;
+}
+function showAccel(mods: string[], code = "") {
+  const k = code ? keyLabel(code) : "";
+  return onMac ? mods.map((m) => MOD_MAC[m] ?? m).join("") + k : [...mods.map((m) => MOD_PC[m] ?? m), k].filter(Boolean).join("+");
+}
+function showSaved(accel: string) {
+  const parts = accel.split("+");
+  const code = parts.pop() ?? "";
+  return showAccel(parts, code);
+}
+function renderHotkey() {
+  if (!hk) return;
+  hkBtn.classList.remove("recording");
+  hkBtn.textContent = showSaved(hk.accel);
+  hkReset.disabled = hk.accel === hk.default;
+  hkNote.textContent = hkErr || (hk.active ? "" : t.hotkeyInactive);
+  hkNote.hidden = !hkNote.textContent;
+}
+function modsOf(e: KeyboardEvent) {
+  const on: Record<string, boolean> = { Control: e.ctrlKey, Alt: e.altKey, Shift: e.shiftKey, Super: e.metaKey };
+  return MOD_ORDER.filter((m) => on[m]);
+}
+async function saveHotkey(accel: string) {
+  try {
+    hk = await api.setHotkey(accel);
+  } catch (err) {
+    hkErr = t.hotkeyFailed(err);
+  }
+}
+function stopRecording() {
+  if (!recording) return;
+  recording = false;
+  window.removeEventListener("keydown", onRecordKey, true);
+  window.removeEventListener("blur", stopRecording);
+  api.suspendHotkey(false).finally(() =>
+    api
+      .getHotkey()
+      .then((h) => (hk = h))
+      .finally(renderHotkey),
+  );
+}
+// 挂在 window 捕获阶段：比 common.ts 里挡缩放等快捷键的监听更早拿到按键
+function onRecordKey(e: KeyboardEvent) {
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const mods = modsOf(e);
+  if (e.code === "Escape" && !mods.length) return stopRecording();
+  if (!validKey(e.code)) {
+    hkBtn.textContent = mods.length ? showAccel(mods) : t.hotkeyRecording;
+    return;
+  }
+  // 只带 ⇧ 或不带修饰键，打字时会误触，不收
+  if (!mods.some((m) => m !== "Shift")) {
+    hkNote.textContent = t.hotkeyNeedMod;
+    hkNote.hidden = false;
+    return;
+  }
+  const accel = [...mods, e.code].join("+");
+  window.removeEventListener("keydown", onRecordKey, true);
+  hkBtn.textContent = showAccel(mods, e.code);
+  saveHotkey(accel).finally(stopRecording);
+}
+hkBtn.addEventListener("click", async () => {
+  if (recording) return stopRecording();
+  recording = true;
+  hkErr = "";
+  hkNote.hidden = true;
+  hkBtn.classList.add("recording");
+  hkBtn.textContent = t.hotkeyRecording;
+  await api.suspendHotkey(true).catch(() => {});
+  window.addEventListener("keydown", onRecordKey, true);
+  window.addEventListener("blur", stopRecording);
+});
+hkReset.addEventListener("click", async () => {
+  if (!hk || hk.accel === hk.default) return;
+  hkErr = "";
+  await saveHotkey(hk.default);
+  renderHotkey();
+});
+api
+  .getHotkey()
+  .then((h) => {
+    hk = h;
+    renderHotkey();
+  })
+  .catch(() => {});
 
 // 菜单栏图标样式（lucide 图标；default = 原图标）
 const TRAY_ICONS: Record<string, string> = {
