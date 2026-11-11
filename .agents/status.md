@@ -20,7 +20,7 @@
 | 最新正式版 | v0.1.5（commit `09c1a67`，2026-10-27，CI 成功，7 个包） |
 | Rei 的 Mac 上装的 | 0.1.5 |
 | 分支 | 只有 `main`，没有别的分支和 worktree |
-| main 最新 | `6d677c9`（2026-10-28），已推送 |
+| main 最新 | 见 `git log`；本节下面列的是 v0.1.5 之后没发的 |
 | 下个版本号 | 0.1.6（小改）或 0.2.0 |
 | tag | v0.1.0 ~ v0.1.5，外加 9 个 `v0.1.0-alpha.*` 预发布 tag |
 
@@ -30,6 +30,8 @@ v0.1.5 之后还没发版的改动（发版时写进 CHANGELOG）：
 - `be6aaa4` 中文名「灵气贴纸」：中文退出菜单改成「退出灵气贴纸」，README 标题
 - `a3682cf` 中文界面「笔记」改成「贴纸」（标签页、列表、空状态、菜单栏「贴纸列表 / Notes」、Rust 报错）
 - `6d677c9` 中文统一叫「贴纸」：界面、Rust 提示、MCP 工具说明、`tauri.conf.json` 的 shortDescription、README、docs、AGENTS.md 里的「便签」「笔记」都改了
+- `c7c0278` 新图标（贴纸卡片图，app-icon.png 1024 生成全部尺寸）
+- `dbeff3a` 全局快捷键：按下就新建贴纸，默认 ⌃⌥-，设置页第一项可改、可恢复默认
 
 发版流程：
 
@@ -59,6 +61,7 @@ v0.1.5 之后还没发版的改动（发版时写进 CHANGELOG）：
 | WebDAV 同步 | 和 Google 二选一（「同步方式」下拉：不同步 / Google Drive / WebDAV）；文件 `<地址>/reicky/reicky-<id>-<修改时间>.json` | `src-tauri/src/dav.rs`、`docs/WEBDAV_SYNC.md` |
 | ydiyr 卡片 | 设置页同步区下面，点开跳 your-data-is-your-responsibility.rei8t.dev | `src/list.ts` |
 | MCP 服务 | `reicky --mcp`，stdio；8 个工具：list / get / create / update / append / set_color / archive / restore，没有删除，归档的只读；外部改了文件，窗口 1.5 秒内刷新 | `src-tauri/src/mcp.rs`、README |
+| 全局快捷键 | 按下就新建一张贴纸，默认 `Control+Alt+Minus`（⌃⌥-），存在数据目录的 `hotkey` 文件。设置页第一项点按钮录新组合（必须带 Ctrl / Alt / ⌘，Esc 取消，录的时候先停用旧组合），旁边按钮恢复默认；注册不上会提示被别的应用占用。Linux Wayland 下系统不让注册全局快捷键 | `src-tauri/src/hotkey.rs`、`src/list.ts` |
 | 调试日志 | `dlog!` 写到数据目录的 `debug.log`（托盘点击、列表显隐、同步起止、DNS 耗时）；网络 DNS 5 秒、连接 8 秒超时 | `src-tauri/src/dbg.rs` |
 
 完整开发历史按时间记在 `notes/history.md`（每次有改动或发版追加一行）。版本说明看 `CHANGELOG.md`。
@@ -82,6 +85,7 @@ src-tauri/src/sync.rs    Google Drive 同步（google-sync.json 存账号）
 src-tauri/src/dav.rs     WebDAV 同步（webdav-sync.json 存账号）
 src-tauri/src/mcp.rs     MCP stdio 服务
 src-tauri/src/dbg.rs     debug.log
+src-tauri/src/hotkey.rs  全局快捷键（新建贴纸）
 src-tauri/capabilities/default.json  权限
 .github/workflows/build.yml          三平台打包，tag v* 触发
 ```
@@ -115,10 +119,9 @@ mac 数据目录：`~/Library/Application Support/dev.rei8t.reicky/`。
 
 ### 等 Rei 拍板
 
-- **发版**：v0.1.5 之后有 4 个中文命名的改动没发（见第 2 节）。发不发、发 0.1.6 还是攒着，等 Rei 说。
+- **发版**：v0.1.5 之后的中文命名、新图标、全局快捷键都还没发（见第 2 节）。发不发、发 0.1.6 还是攒着，等 Rei 说。
 - **删不删 alpha tag**：2026-10-17 问过 alpha.3 / alpha.4 两个误推的 tag 要不要删，没回。现在一共 9 个 alpha tag，都在 Release 里挂着预发布包。
 - **Rust 端报错只有中文**：前端 9 种语言，Rust 返回的错误（同步失败、找不到贴纸等）和菜单栏「贴纸列表 / Notes」还是写死的。要不要也做 i18n？
-- **docs/PRODUCT.md「以后再做 / 待定」里剩下的**：全局快捷键唤出 / 新建贴纸（组合键没定）。
 
 ### 我们能做的
 
@@ -126,6 +129,7 @@ mac 数据目录：`~/Library/Application Support/dev.rei8t.reicky/`。
 
 ## 7. 写了但没真机验证的
 
+- 全局快捷键（dbeff3a）：⌃⌥- 能不能新建贴纸，新窗口能不能拿到焦点；设置页录新组合、恢复默认。
 - Google 同步在两台设备同时改同一张贴纸时的冲突处理。
 - 随系统启动（autostart）。
 - 全屏大字在 Windows / Linux 上的效果（mac 上是铺满当前屏，其他平台用 setFullscreen）。

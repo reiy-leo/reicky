@@ -38,6 +38,7 @@ src-tauri/src/sync.rs Google Drive 同步
 src-tauri/src/dav.rs  WebDAV 同步
 src-tauri/src/mcp.rs  MCP stdio 服务（reicky --mcp）
 src-tauri/src/dbg.rs  debug.log
+src-tauri/src/hotkey.rs 全局快捷键（新建贴纸，默认 ⌃⌥-）
 .github/workflows/    三平台打包
 .agents/              skills / rules / prompts / memory
 ```
