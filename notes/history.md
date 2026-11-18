@@ -32,3 +32,4 @@
 - 2026-11-11 c7c0278 换新图标（Rei 给的贴纸卡片图，tauri icon 生成全部尺寸，删掉 android/ios）；介绍页 b844c2c favicon / icon.png 同步。未发版。
 - 2026-11-12 dbeff3a 全局快捷键：按下新建贴纸，默认 ⌃⌥-，设置页第一项可改、可恢复默认（src-tauri/src/hotkey.rs）。LightVela fmt / clippy 零警告。未发版。
 - 2026-11-12 发版 v0.1.6（1309a7c）：全局快捷键、新图标、中文名「灵气贴纸」。CI 7 个包，已装到 Mac；介绍页 9172f26 加上全局快捷键并部署。
+- 2026-11-18 ca01346 启动时主贴纸是空的就不弹出来（Rei：开机后不要打开一个空贴纸）。LightVela fmt / clippy 通过。未发版。
