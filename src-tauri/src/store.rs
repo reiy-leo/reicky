@@ -153,6 +153,14 @@ impl Store {
         Ok(n)
     }
 
+    /// 主贴纸是否有内容（文字或拖进来的路径）；没有主贴纸或已归档算空。不会新建贴纸
+    pub fn current_has_content(&self) -> bool {
+        self.read_state()
+            .current_note_id
+            .and_then(|id| self.get(&id).ok())
+            .is_some_and(|n| !n.archived && (!n.text.trim().is_empty() || !n.paths.is_empty()))
+    }
+
     pub fn is_current(&self, id: &str) -> bool {
         self.read_state().current_note_id.as_deref() == Some(id)
     }

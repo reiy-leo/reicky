@@ -819,6 +819,16 @@ pub fn run() {
             hotkey::register_saved(app.handle(), &dir);
             if let Some(w) = app.get_webview_window("main") {
                 pin_window(&w);
+                // 主窗口默认隐藏（tauri.conf.json），主贴纸是空的就不弹出来，免得开机桌面上多一张空贴纸
+                let has_content = app
+                    .state::<AppState>()
+                    .store
+                    .lock()
+                    .unwrap()
+                    .current_has_content();
+                if has_content {
+                    let _ = w.show();
+                }
             }
             Ok(())
         })
