@@ -24,7 +24,8 @@
 | 下个版本号 | 0.1.8（小改）或 0.2.0 |
 | tag | v0.1.0 ~ v0.1.7，外加 9 个 `v0.1.0-alpha.*` 预发布 tag |
 
-v0.1.7 之后还没发版的改动（发版时写进 CHANGELOG）：暂无。
+v0.1.7 之后还没发版的改动（发版时写进 CHANGELOG）：
+- 修复：macOS 上启动时主贴纸为空仍会弹出（tauri.macos.conf.json 的 windows 数组整个替换主配置，缺了 `"visible": false`；0.1.7 只在 Windows/Linux 生效）。
 
 发版流程：
 

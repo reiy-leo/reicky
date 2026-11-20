@@ -34,3 +34,4 @@
 - 2026-11-12 发版 v0.1.6（1309a7c）：全局快捷键、新图标、中文名「灵气贴纸」。CI 7 个包，已装到 Mac；介绍页 9172f26 加上全局快捷键并部署。
 - 2026-11-18 ca01346 启动时主贴纸是空的就不弹出来（Rei：开机后不要打开一个空贴纸）。LightVela fmt / clippy 通过。未发版。
 - 2026-11-19 发版 v0.1.7：启动时主贴纸为空不弹出（ca01346）。装到 Mac 和 Windows。
+- 2026-11-20 修 macOS 启动仍弹空贴纸：tauri.macos.conf.json 的 windows 数组会整个覆盖 tauri.conf.json 的，补上 "visible": false。未发版。

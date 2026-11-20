@@ -14,7 +14,8 @@
         "decorations": true,
         "alwaysOnTop": true,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "visible": false
       }
     ]
   }
