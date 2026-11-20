@@ -4,7 +4,7 @@ const de: Dict = {
   placeholder: "Einfach notieren … abgelegte Dateien werden nur als Pfad gespeichert",
   color: "Farbe",
   shape: "Form ändern",
-  bigType: "Große Schrift im Vollbild (⌘L / Strg+L, Esc oder Klick beendet)",
+  bigType: "Große Schrift (⌘L / Strg+L wechselt klein, groß, Vollbild; Esc oder Klick beendet)",
   bigEmpty: "Eine leere Notiz hat nichts anzuzeigen",
   archive: "Archivieren",
   unarchive: "Wiederherstellen",

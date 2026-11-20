@@ -4,7 +4,7 @@ const zh: Dict = {
   placeholder: "随手贴点什么……拖文件进来只记路径",
   color: "颜色",
   shape: "变换形状",
-  bigType: "全屏大字（⌘L / Ctrl+L，Esc 或点击退出）",
+  bigType: "大字（⌘L / Ctrl+L 依次切换小、大、全屏，Esc 或点击退出）",
   bigEmpty: "空白贴纸没有可显示的文字",
   archive: "归档",
   unarchive: "恢复",

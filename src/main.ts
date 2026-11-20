@@ -301,7 +301,7 @@ document.addEventListener("keydown", (e) => {
   }
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.code === "KeyL") {
     e.preventDefault();
-    toggleBig();
+    nextBig();
     return;
   }
   if (bigOn && e.key === "Escape") {
@@ -317,12 +317,18 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") palette.hidden = true;
 });
 
-// ---------- 全屏大字：⌘/Ctrl+L 或底栏按钮；有选中显示选中，否则整张；Esc / 点击 / 再按一次退出 ----------
+// ---------- 大字：⌘/Ctrl+L 或底栏按钮依次切换 小（屏幕 35%）→ 大（75%）→ 全屏 → 回到贴纸 ----------
+// 有选中显示选中，否则整张；Esc / 点击直接回到贴纸
 const big = $("big");
 const bigText = $("big-text");
 const isMacUA = document.documentElement.dataset.platform === "mac";
+// 0 = 普通贴纸；1、2 = 窗口放大到屏幕可用区域的 35% / 75%，居中；3 = 全屏
+const BIG_RATIO = [0, 0.35, 0.75];
+const BIG_FULL = 3;
+let bigLevel = 0;
 let bigOn = false;
 let bigRestore: { pos: PhysicalPosition; size: PhysicalSize } | null = null;
+let bigNativeFull = false; // 非 mac 的全屏用系统全屏
 
 function bigContent(): string {
   const sel = editor.value.slice(editor.selectionStart, editor.selectionEnd);
@@ -346,26 +352,49 @@ function fitBig() {
   bigText.style.fontSize = `${lo}px`;
 }
 
-async function enterBig() {
-  const text = bigContent();
-  if (!text) return flash(t.bigEmpty);
-  hideTip();
-  palette.hidden = true;
-  bigText.textContent = text;
-  big.hidden = false;
-  bigOn = true;
-  try {
+// 把窗口摆到第 level 档；进大字前的位置和尺寸只在第一次记下，退出时一次还原
+async function applyBigLevel(level: number) {
+  if (!bigRestore) bigRestore = { pos: await win.outerPosition(), size: await win.outerSize() };
+  const m = await currentMonitor();
+  if (level === BIG_FULL) {
     if (isMacUA) {
       // mac 的贴纸窗口是 auxiliary/全空间，进不了原生全屏：直接铺满当前屏幕（窗口本就置顶）
-      const m = await currentMonitor();
-      bigRestore = { pos: await win.outerPosition(), size: await win.outerSize() };
       if (m) {
         await win.setPosition(new PhysicalPosition(m.position.x, m.position.y));
         await win.setSize(new PhysicalSize(m.size.width, m.size.height));
       }
     } else {
       await win.setFullscreen(true);
+      bigNativeFull = true;
     }
+    return;
+  }
+  if (!m) return;
+  const wa = m.workArea;
+  const r = BIG_RATIO[level];
+  const w = Math.round(wa.size.width * r),
+    h = Math.round(wa.size.height * r);
+  await win.setSize(new PhysicalSize(w, h));
+  await win.setPosition(
+    new PhysicalPosition(Math.round(wa.position.x + (wa.size.width - w) / 2), Math.round(wa.position.y + (wa.size.height - h) / 2)),
+  );
+}
+
+async function nextBig() {
+  if (!bigOn) {
+    const text = bigContent();
+    if (!text) return flash(t.bigEmpty);
+    hideTip();
+    palette.hidden = true;
+    bigText.textContent = text;
+  }
+  const level = bigLevel + 1;
+  if (level > BIG_FULL) return exitBig();
+  bigLevel = level;
+  big.hidden = false;
+  bigOn = true;
+  try {
+    await applyBigLevel(level);
   } catch (err) {
     console.warn(err);
   }
@@ -376,28 +405,24 @@ async function enterBig() {
 async function exitBig() {
   if (!bigOn) return;
   bigOn = false;
+  bigLevel = 0;
   big.hidden = true;
   try {
-    if (isMacUA) {
-      if (bigRestore) {
-        await win.setSize(bigRestore.size);
-        await win.setPosition(bigRestore.pos);
-      }
-    } else {
-      await win.setFullscreen(false);
+    if (bigNativeFull) await win.setFullscreen(false);
+    if (bigRestore) {
+      await win.setSize(bigRestore.size);
+      await win.setPosition(bigRestore.pos);
     }
   } catch (err) {
     console.warn(err);
   }
+  bigNativeFull = false;
   bigRestore = null;
   editor.focus();
 }
 
-function toggleBig() {
-  bigOn ? exitBig() : enterBig();
-}
 $("btn-big").addEventListener("mousedown", (e) => e.preventDefault()); // 保住编辑框里的选区
-$("btn-big").addEventListener("click", () => enterBig());
+$("btn-big").addEventListener("click", () => nextBig());
 big.addEventListener("click", () => exitBig());
 window.addEventListener("resize", () => requestAnimationFrame(fitBig));
 

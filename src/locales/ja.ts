@@ -4,7 +4,7 @@ const ja: Dict = {
   placeholder: "なんでもメモ… ドロップしたファイルはパスだけ記録",
   color: "色",
   shape: "形を変える",
-  bigType: "全画面の大きな文字（⌘L / Ctrl+L、Esc かクリックで終了）",
+  bigType: "大きな文字（⌘L / Ctrl+L で小・大・全画面を切り替え、Esc かクリックで終了）",
   bigEmpty: "空のメモには表示する文字がありません",
   archive: "アーカイブ",
   unarchive: "元に戻す",
