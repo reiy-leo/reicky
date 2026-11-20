@@ -336,20 +336,30 @@ function bigContent(): string {
   return editor.value.trim() || (note?.paths ?? []).map((p) => p.split(/[\\/]/).filter(Boolean).pop() ?? p).join("\n");
 }
 
-// 二分找最大字号：既不超宽也不超高
+// 二分找最大字号：既不超宽也不超高。量的是去掉内边距后的可用区域
 function fitBig() {
   if (!bigOn) return;
-  const maxW = big.clientWidth * 0.92,
-    maxH = big.clientHeight * 0.92;
+  const cs = getComputedStyle(big);
+  const maxW = (big.clientWidth - Number.parseFloat(cs.paddingLeft) - Number.parseFloat(cs.paddingRight)) * 0.98,
+    maxH = (big.clientHeight - Number.parseFloat(cs.paddingTop) - Number.parseFloat(cs.paddingBottom)) * 0.98;
+  if (maxW <= 0 || maxH <= 0) return;
   let lo = 12,
-    hi = 1000;
+    hi = 2000;
   while (hi - lo > 1) {
     const mid = (lo + hi) >> 1;
     bigText.style.fontSize = `${mid}px`;
-    if (bigText.scrollWidth <= maxW && bigText.scrollHeight <= maxH) lo = mid;
+    const r = bigText.getBoundingClientRect();
+    if (bigText.scrollWidth <= maxW && bigText.scrollHeight <= maxH && r.width <= maxW && r.height <= maxH) lo = mid;
     else hi = mid;
   }
   bigText.style.fontSize = `${lo}px`;
+}
+
+// 窗口改尺寸是异步的，网页的尺寸可能晚几帧才变：盯着 big 的尺寸，一变就重算
+new ResizeObserver(() => fitBig()).observe(big);
+function refitSoon() {
+  requestAnimationFrame(fitBig);
+  for (const ms of [80, 200, 400]) setTimeout(fitBig, ms);
 }
 
 // 把窗口摆到第 level 档；进大字前的位置和尺寸只在第一次记下，退出时一次还原
@@ -399,7 +409,7 @@ async function nextBig() {
     console.warn(err);
   }
   await win.setFocus().catch(() => {});
-  requestAnimationFrame(fitBig);
+  refitSoon();
 }
 
 async function exitBig() {

@@ -987,7 +987,7 @@ body.list-window .pane:not([hidden]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4vh 4vw;
+  padding: 3vh 3vw;
   background: var(--paper);
   cursor: default;
 }
@@ -996,7 +996,6 @@ body.list-window .pane:not([hidden]) {
 }
 .big-text {
   max-width: 100%;
-  max-height: 100%;
   color: var(--ink);
   font-family: var(--font);
   font-weight: 600;
