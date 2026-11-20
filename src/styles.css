@@ -995,13 +995,13 @@ body.list-window .pane:not([hidden]) {
   display: none;
 }
 .big-text {
-  max-width: 100%;
+  flex: none;
   color: var(--ink);
   font-family: var(--font);
   font-weight: 600;
   line-height: 1.15;
   text-align: center;
-  white-space: pre-wrap;
+  white-space: pre-line; /* 保留换行；行尾空格不悬挂，免得把宽度撑出去 */
   overflow-wrap: anywhere;
 }
 

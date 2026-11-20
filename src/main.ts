@@ -336,20 +336,21 @@ function bigContent(): string {
   return editor.value.trim() || (note?.paths ?? []).map((p) => p.split(/[\\/]/).filter(Boolean).pop() ?? p).join("\n");
 }
 
-// 二分找最大字号：既不超宽也不超高。量的是去掉内边距后的可用区域
+// 二分找最大字号。文字框宽度定死为可用宽度，换行交给浏览器，只要高度放得下、单个字不撑破宽度就行。
+// （以前同时比宽度：折行的文字本来就占满整行，宽度永远「刚好超」一点，字号被一路压小。）
 function fitBig() {
   if (!bigOn) return;
   const cs = getComputedStyle(big);
-  const maxW = (big.clientWidth - Number.parseFloat(cs.paddingLeft) - Number.parseFloat(cs.paddingRight)) * 0.98,
-    maxH = (big.clientHeight - Number.parseFloat(cs.paddingTop) - Number.parseFloat(cs.paddingBottom)) * 0.98;
-  if (maxW <= 0 || maxH <= 0) return;
+  const w = Math.floor(big.clientWidth - Number.parseFloat(cs.paddingLeft) - Number.parseFloat(cs.paddingRight)),
+    maxH = big.clientHeight - Number.parseFloat(cs.paddingTop) - Number.parseFloat(cs.paddingBottom);
+  if (w <= 0 || maxH <= 0) return;
+  bigText.style.width = `${w}px`;
   let lo = 12,
     hi = 2000;
   while (hi - lo > 1) {
     const mid = (lo + hi) >> 1;
     bigText.style.fontSize = `${mid}px`;
-    const r = bigText.getBoundingClientRect();
-    if (bigText.scrollWidth <= maxW && bigText.scrollHeight <= maxH && r.width <= maxW && r.height <= maxH) lo = mid;
+    if (bigText.scrollHeight <= maxH && bigText.scrollWidth <= w + 1) lo = mid;
     else hi = mid;
   }
   bigText.style.fontSize = `${lo}px`;
