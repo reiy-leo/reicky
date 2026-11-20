@@ -4,7 +4,7 @@ const id: Dict = {
   placeholder: "Catat apa saja… file yang dijatuhkan hanya disimpan jalurnya",
   color: "Warna",
   shape: "Ubah bentuk",
-  bigType: "Teks besar (⌘L / Ctrl+L berganti kecil, besar, layar penuh; Esc atau klik untuk keluar)",
+  bigType: "Teks besar (⌘L / Ctrl+L berganti kecil, besar, layar penuh; Esc untuk keluar; teks bisa dipilih dan disalin)",
   bigEmpty: "Catatan kosong tidak punya teks untuk ditampilkan",
   archive: "Arsipkan",
   unarchive: "Pulihkan",

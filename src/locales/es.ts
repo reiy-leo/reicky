@@ -4,7 +4,7 @@ const es: Dict = {
   placeholder: "Apunta lo que sea… de los archivos soltados solo se guarda la ruta",
   color: "Color",
   shape: "Cambiar forma",
-  bigType: "Letra grande (⌘L / Ctrl+L alterna pequeña, grande, pantalla completa; Esc o clic para salir)",
+  bigType: "Letra grande (⌘L / Ctrl+L alterna pequeña, grande, pantalla completa; Esc para salir; el texto se puede seleccionar y copiar)",
   bigEmpty: "Una nota vacía no tiene nada que mostrar",
   archive: "Archivar",
   unarchive: "Restaurar",

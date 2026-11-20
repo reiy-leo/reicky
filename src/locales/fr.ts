@@ -4,7 +4,7 @@ const fr: Dict = {
   placeholder: "Notez ce que vous voulez… les fichiers déposés ne gardent que leur chemin",
   color: "Couleur",
   shape: "Changer de forme",
-  bigType: "Gros caractères (⌘L / Ctrl+L : petit, grand, plein écran ; Échap ou clic pour quitter)",
+  bigType: "Gros caractères (⌘L / Ctrl+L : petit, grand, plein écran ; Échap pour quitter ; le texte peut être sélectionné et copié)",
   bigEmpty: "Une note vide n’a rien à afficher",
   archive: "Archiver",
   unarchive: "Restaurer",

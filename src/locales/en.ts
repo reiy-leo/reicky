@@ -3,7 +3,7 @@ const en = {
   placeholder: "Jot anything… dropped files are kept as paths only",
   color: "Color",
   shape: "Change shape",
-  bigType: "Large type (⌘L / Ctrl+L steps through small, large, full screen; Esc or click to exit)",
+  bigType: "Large type (⌘L / Ctrl+L steps through small, large, full screen; Esc to exit; text can be selected and copied)",
   bigEmpty: "Nothing to show in a blank note",
   archive: "Archive",
   unarchive: "Restore",

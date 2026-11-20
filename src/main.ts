@@ -304,6 +304,12 @@ document.addEventListener("keydown", (e) => {
     nextBig();
     return;
   }
+  // 大字时 ⌘A 只选大字的文字（编辑框已失焦，不会全选到贴纸里）
+  if (bigOn && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.code === "KeyA") {
+    e.preventDefault();
+    getSelection()?.selectAllChildren(bigText);
+    return;
+  }
   if (bigOn && e.key === "Escape") {
     e.preventDefault();
     exitBig();
@@ -317,7 +323,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") palette.hidden = true;
 });
 
-// ---------- 大字：⌘/Ctrl+L 或底栏按钮依次切换 小（屏幕 35%）→ 大（75%）→ 全屏 → 回到贴纸 ----------
+// ---------- 大字：⌘/Ctrl+L 或底栏按钮依次切换 小（屏幕 35%）→ 大（75%）→ 全屏 → 回到贴纸；Esc 退出 ----------
 // 有选中显示选中，否则整张；Esc / 点击直接回到贴纸
 const big = $("big");
 const bigText = $("big-text");
@@ -398,6 +404,7 @@ async function nextBig() {
     hideTip();
     palette.hidden = true;
     bigText.textContent = text;
+    editor.blur(); // 大字时键盘不落到编辑框里，⌘A / ⌘C 作用在大字上
   }
   const level = bigLevel + 1;
   if (level > BIG_FULL) return exitBig();
@@ -434,7 +441,7 @@ async function exitBig() {
 
 $("btn-big").addEventListener("mousedown", (e) => e.preventDefault()); // 保住编辑框里的选区
 $("btn-big").addEventListener("click", () => nextBig());
-big.addEventListener("click", () => exitBig());
+// 大字里的文字可以选中复制，点击不再退出；退出用 Esc 或再按 ⌘L 切回贴纸
 window.addEventListener("resize", () => requestAnimationFrame(fitBig));
 
 // ---------- ⌘/Ctrl+S：弹系统保存框（默认「下载」/首行.txt），存成文本文件 ----------

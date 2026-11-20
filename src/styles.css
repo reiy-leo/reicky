@@ -991,6 +991,11 @@ body.list-window .pane:not([hidden]) {
   background: var(--paper);
   cursor: default;
 }
+.big-text {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
 .big[hidden] {
   display: none;
 }
